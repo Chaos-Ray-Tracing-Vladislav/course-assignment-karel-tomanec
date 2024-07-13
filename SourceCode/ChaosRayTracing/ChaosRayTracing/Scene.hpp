@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include "Textures.hpp"
 
 // Helper functions
 Vector3 loadVector(const rapidjson::Value::ConstArray& arr)
@@ -97,6 +98,22 @@ class Scene
 {
 public:
 
+	// Move constructor
+	Scene(Scene&& other) noexcept
+		: textures(std::move(other.textures)) {}
+
+	// Move assignment operator
+	Scene& operator=(Scene&& other) noexcept {
+		if (this != &other) {
+			textures = std::move(other.textures);
+		}
+		return *this;
+	}
+
+	// Disable copy constructor and copy assignment operator
+	Scene(const Scene&) = delete;
+	Scene& operator=(const Scene&) = delete;
+
 	struct ImageSettings
 	{
 		uint32_t width;
@@ -154,6 +171,7 @@ public:
 	Camera camera;
 	std::vector<Mesh> meshes;
 	std::vector<Material> materials;
+	std::vector<std::unique_ptr<Texture>> textures;
 	std::vector<Light> lights;
 	Settings settings;
 
@@ -287,6 +305,10 @@ protected:
 						const auto typeStr = std::string(typeValue.GetString());
 						material.textureName = std::string(albedoVal.GetString());
 					}
+					else
+					{
+						std::cout << "Invalid material" << std::endl;
+					}
 				}
 
 				const Value& smoothShadingVal = it->FindMember(kSmoothShadingStr.c_str())->value;
@@ -366,7 +388,61 @@ protected:
 		{
 			for (Value::ConstValueIterator it = texturesValue.Begin(); it != texturesValue.End(); ++it)
 			{
+				const Value& nameValue = it->FindMember(kTexturesNameStr.c_str())->value;
+				assert(!nameValue.IsNull() && nameValue.IsString());
+				std::string name = std::string(nameValue.GetString());
+				
+				const Value& typeValue = it->FindMember(kTexturesTypeStr.c_str())->value;
+				assert(!typeValue.IsNull() && typeValue.IsString());
+				std::string type = std::string(typeValue.GetString());
 
+				if (type == "albedo")
+				{
+					const Value& albedoValue = it->FindMember(kTexturesAlbedoStr.c_str())->value;
+					assert(!albedoValue.IsNull() && albedoValue.IsArray());
+					Vector3 albedo = loadVector(albedoValue.GetArray());
+					textures.push_back(std::make_unique<AlbedoTexture>(std::move(name), std::move(albedo)));
+				}
+				else if (type == "edges")
+				{
+					const Value& edgeColorValue = it->FindMember(kTexturesEdgeColorStr.c_str())->value;
+					assert(!edgeColorValue.IsNull() && edgeColorValue.IsArray());
+					Vector3 edgeColor = loadVector(edgeColorValue.GetArray());
+
+					const Value& innerColorValue = it->FindMember(kTexturesInnerColorStr.c_str())->value;
+					assert(!innerColorValue.IsNull() && innerColorValue.IsArray());
+					Vector3 innerColor = loadVector(innerColorValue.GetArray());
+
+					const Value& edgeWidthValue = it->FindMember(kTexturesEdgeWidthStr.c_str())->value;
+					assert(!edgeWidthValue.IsNull() && edgeWidthValue.IsFloat());
+					float edgeWidth = edgeWidthValue.GetFloat();
+
+					textures.push_back(std::make_unique<EdgesTexture>(std::move(name), std::move(edgeColor), std::move(innerColor), edgeWidth));
+				}
+				else if (type == "checker")
+				{
+					const Value& colorAValue = it->FindMember(kTexturesColorAStr.c_str())->value;
+					assert(!colorAValue.IsNull() && colorAValue.IsArray());
+					Vector3 colorA = loadVector(colorAValue.GetArray());
+
+					const Value& colorBValue = it->FindMember(kTexturesColorBStr.c_str())->value;
+					assert(!colorBValue.IsNull() && colorBValue.IsArray());
+					Vector3 colorB = loadVector(colorBValue.GetArray());
+
+					const Value& squareSizeValue = it->FindMember(kTexturesSquareSizeStr.c_str())->value;
+					assert(!squareSizeValue.IsNull() && squareSizeValue.IsFloat());
+					float squareSize = squareSizeValue.GetFloat();
+
+					textures.push_back(std::make_unique<CheckerTexture>(std::move(name), std::move(colorA), std::move(colorB), squareSize));
+				}
+				else if (type == "bitmap")
+				{
+					const Value& pathValue = it->FindMember(kTexturesFilePathStr.c_str())->value;
+					assert(!pathValue.IsNull() && pathValue.IsString());
+					std::string path = std::string(pathValue.GetString());
+
+					textures.push_back(std::make_unique<BitmapTexture>(std::move(name), std::move(path)));
+				}
 			}
 		}
 

@@ -2,19 +2,19 @@
 
 int main()
 {
-	std::vector<Scene> scenes{
-		Scene{ "scene0.crtscene" },
-		//Scene{ "scene1.crtscene" },
-		//Scene{ "scene2.crtscene" },
-		//Scene{ "scene3.crtscene" },
-		//Scene{ "scene4.crtscene" },
-	};
+    std::vector<std::unique_ptr<Scene>> scenes;
 
-	for (auto& scene : scenes)
-	{
-		Renderer renderer(scene);
-		renderer.RenderImage();
-	}
+    // Add scenes to the vector using make_unique
+    scenes.push_back(std::make_unique<Scene>("scene0.crtscene"));
+    scenes.push_back(std::make_unique<Scene>("scene1.crtscene"));
+    scenes.push_back(std::make_unique<Scene>("scene2.crtscene"));
+    scenes.push_back(std::make_unique<Scene>("scene3.crtscene"));
+
+    // Loop over the scenes and render them
+    for (auto& scene : scenes) {
+        Renderer renderer(*scene);  // Pass the dereferenced unique_ptr to the renderer
+        renderer.RenderImage();
+    }
 
 	return 0;
 }
