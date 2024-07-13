@@ -82,6 +82,8 @@ struct Material
 	Vector3 albedo{ 1.f };
 	float ior;
 	bool smoothShading;
+	bool hasTexture = false;
+	std::string textureName;
 };
 
 class Mesh
@@ -181,6 +183,18 @@ protected:
 	inline static const std::string kSmoothShadingStr{ "smooth_shading" };
 	inline static const std::string kMaterialIndexStr{ "material_index" };
 
+	inline static const std::string kTexturesStr{ "textures" };
+	inline static const std::string kTexturesNameStr{ "name" };
+	inline static const std::string kTexturesTypeStr{ "type" };
+	inline static const std::string kTexturesAlbedoStr{ "albedo" };
+	inline static const std::string kTexturesEdgeColorStr{ "edge_color" };
+	inline static const std::string kTexturesInnerColorStr{ "inner_color" };
+	inline static const std::string kTexturesEdgeWidthStr{ "edge_width" };
+	inline static const std::string kTexturesColorAStr{ "color_A" };
+	inline static const std::string kTexturesColorBStr{ "color_B" };
+	inline static const std::string kTexturesSquareSizeStr{ "square_size" };
+	inline static const std::string kTexturesFilePathStr{ "file_path" };
+
 	const std::map<std::string, Material::Type> materialTypeMap = {
 		{ kTypeConstantStr, Material::Type::CONSTANT},
 		{ kTypeDiffuseStr, Material::Type::DIFFUSE},
@@ -263,8 +277,16 @@ protected:
 
 				} else {
 					const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
-					assert(!albedoVal.IsNull() && albedoVal.IsArray());
-					material.albedo = loadVector(albedoVal.GetArray());
+					assert(!albedoVal.IsNull());
+					if (albedoVal.IsArray())
+					{
+						material.albedo = loadVector(albedoVal.GetArray());
+					}
+					else if (albedoVal.IsString())
+					{
+						const auto typeStr = std::string(typeValue.GetString());
+						material.textureName = std::string(albedoVal.GetString());
+					}
 				}
 
 				const Value& smoothShadingVal = it->FindMember(kSmoothShadingStr.c_str())->value;
@@ -335,6 +357,16 @@ protected:
 				mesh.materialIndex = materialIndexValue.GetInt();
 
 				meshes.push_back(mesh);
+			}
+		}
+
+		// Load textures
+		const Value& texturesValue = doc.FindMember(kTexturesStr.c_str())->value;
+		if (!texturesValue.IsNull() && texturesValue.IsArray())
+		{
+			for (Value::ConstValueIterator it = texturesValue.Begin(); it != texturesValue.End(); ++it)
+			{
+
 			}
 		}
 
