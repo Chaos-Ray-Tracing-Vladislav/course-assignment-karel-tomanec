@@ -106,10 +106,10 @@ public:
 		this->albedo = albedo;
 	}
 
-	Vector3 GetAlbedo(const Vector2& uv) const
+	Vector3 GetAlbedo(const Vector2& barycentrics, const Vector2& uv) const
 	{
 		if (texture)
-			return texture->GetColor(uv);
+			return texture->GetColor(barycentrics, uv);
 
 		return albedo;
 	}
@@ -442,7 +442,10 @@ protected:
 					assert(!pathValue.IsNull() && pathValue.IsString());
 					std::string path = std::string(pathValue.GetString());
 
-					textures.emplace(name, std::make_shared<const BitmapTexture>(name, std::move(path)));
+					if (!path.empty() && path[0] == '/')
+						path.erase(0, 1);
+
+					textures.emplace(name, std::make_shared<const BitmapTexture>(name, path));
 				}
 				else
 				{

@@ -280,13 +280,13 @@ struct Triangle
 	Vector3 GetNormal(const Vector2& barycentrics) const
 	{
 		float w = 1.f - barycentrics.x - barycentrics.y;
-		return Normalize(v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * w);
+		return Normalize(v1.normal * barycentrics.x + v2.normal * barycentrics.y + v0.normal * w);
 	}
 
 	Vector2 GetUVs(const Vector2& barycentrics) const
 	{
 		float w = 1.f - barycentrics.x - barycentrics.y;
-		return v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * w;
+		return v1.uv * barycentrics.x + v2.uv * barycentrics.y + v0.uv * w;
 	}
 
 	HitInfo Intersect(const Ray& ray) const
@@ -322,12 +322,9 @@ struct Triangle
 			return info;
 
 		// Calculate the barycentric coordinates
-		float areaABC = Magnitude(Cross(b - a, c - a)); // Area of the whole triangle
-		float areaPBC = Magnitude(Cross(b - p, c - p)); // Area of the triangle PBC
-		float areaPCA = Magnitude(Cross(c - p, a - p)); // Area of the triangle PCA
-
-		info.barycentrics.x = areaPBC / areaABC;
-		info.barycentrics.y = areaPCA / areaABC;
+		float triArea = Magnitude(Cross(b - a, c - a)); // Area of the whole triangle
+		info.barycentrics.x = Magnitude(Cross(p - a, c - a)) / triArea;
+		info.barycentrics.y = Magnitude(Cross(b - a, p - a)) / triArea;
 
 		info.hit = true;
 		info.t = t;

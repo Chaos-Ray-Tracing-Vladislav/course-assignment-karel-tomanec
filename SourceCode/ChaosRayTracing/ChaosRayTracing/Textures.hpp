@@ -2,6 +2,9 @@
 
 #include "Math3D.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 class Texture 
 {
 public:
@@ -10,7 +13,7 @@ public:
 
 	virtual ~Texture() = default;
 
-	virtual Vector3 GetColor(const Vector2& uv) const = 0;
+	virtual Vector3 GetColor(const Vector2& barycentrics, const Vector2& uv) const = 0;
 
 	std::string name;
 };
@@ -21,7 +24,7 @@ public:
 
 	AlbedoTexture(std::string name, Vector3 albedo) : Texture(std::move(name)), albedo(std::move(albedo)) {}
 
-	Vector3 GetColor(const Vector2& uv) const override { return albedo; }
+	Vector3 GetColor(const Vector2& barycentrics, const Vector2& uv) const override { return albedo; }
 
 private:
 
@@ -36,14 +39,12 @@ public:
 		: Texture(std::move(name)), edgeColor(std::move(edgeColor)), innerColor(std::move(innerColor)), edgeWidth(edgeWidth)
 	{ }
 
-	Vector3 GetColor(const Vector2& uv) const override 
+	Vector3 GetColor(const Vector2& barycentrics, const Vector2& uv) const override 
 	{ 
-		const float& u = uv.x;
-		const float& v = uv.y;
-		if (u < edgeWidth || v < edgeWidth)
+		if (barycentrics.x < edgeWidth || barycentrics.y < edgeWidth)
 			return edgeColor;
 
-		if (1.f - u - v < edgeWidth)
+		if (1.f - barycentrics.x - barycentrics.y < edgeWidth)
 			return edgeColor;
 
 		return innerColor;
@@ -66,7 +67,7 @@ public:
 		numSquares = 1.f / squareSize;
 	}
 
-	Vector3 GetColor(const Vector2& uv) const override 
+	Vector3 GetColor(const Vector2& barycentrics, const Vector2& uv) const override 
 	{ 
 		const float& u = uv.x;
 		const float& v = uv.y;
@@ -89,12 +90,42 @@ private:
 class BitmapTexture : public Texture 
 {
 public:
-	BitmapTexture(std::string name, std::string filePath) 
-		: Texture(std::move(name)), filePath(std::move(filePath))
-	{ }
+	BitmapTexture(std::string name, const std::string& filePath) 
+		: Texture(std::move(name))
+	{
+		LoadImageTexture(filePath);
+	}
 
-	Vector3 GetColor(const Vector2& uv) const override { return {}; }
+	Vector3 GetColor(const Vector2& barycentrics, const Vector2& uv) const override 
+	{ 
+		assert(image);
+
+		int x = uv.x * width;
+		int y = (1.f - uv.y) * height;
+
+		unsigned char *pixel = image + (y * width + x) * channels;
+
+		unsigned char r = pixel[0];
+		unsigned char g = pixel[1];
+		unsigned char b = pixel[2];
+
+		return { static_cast<float>(r) / 255.f, static_cast<float>(g) / 255.f, static_cast<float>(b) / 255.f };
+	}
+
+	~BitmapTexture() override
+	{
+		stbi_image_free(image);
+	}
 	
 private:
-	std::string filePath;
+
+	void LoadImageTexture(const std::string& filePath)
+	{
+		image = stbi_load(filePath.c_str(), &width, &height, &channels, 0);
+	}
+	
+	int width;
+	int height;
+	int channels;
+	unsigned char* image = nullptr;
 };
