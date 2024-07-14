@@ -28,6 +28,44 @@ struct RGB
 	}
 };
 
+struct Vector2 
+{
+	float x;
+	float y;
+
+	Vector2() = default;
+
+	Vector2(float v) : x(v), y(v) {}
+
+	Vector2(float x, float y) : x(x), y(y) {}
+};
+
+inline Vector2 operator +(const Vector2& a, const Vector2& b)
+{
+	return {a.x + b.x, a.y + b.y};
+}
+
+inline Vector2 operator -(const Vector2& a, const Vector2& b)
+{
+	return {a.x - b.x, a.y - b.y};
+}
+
+inline Vector2 operator *(const Vector2& v, float s)
+{
+	return { v.x * s, v.y * s };
+}
+
+inline Vector2 operator *(const Vector2& v, const Vector2& u)
+{
+	return { v.x * u.x, v.y * u.y };
+}
+
+inline Vector2 operator /(const Vector2& v, float s)
+{
+	s = 1.f / s;
+	return { v.x * s, v.y * s };
+}
+
 struct Vector3
 {
 	float x;
@@ -206,8 +244,7 @@ struct HitInfo
 	float t = std::numeric_limits<float>::max();
 	Vector3 point;
 	Vector3 normal;
-	float u;
-	float v;
+	Vector2 barycentrics;
 	uint32_t meshIndex;
 	uint32_t triangleIndex;
 };
@@ -216,6 +253,7 @@ struct Vertex
 {
 	Vector3 position;
 	Vector3 normal;
+	Vector2 uv;
 };
 
 struct Triangle
@@ -239,10 +277,16 @@ struct Triangle
 		return Cross(v1.position - v0.position, v2.position - v0.position).Magnitude() * 0.5f;
 	}
 
-	Vector3 GetNormal(float u, float v) const
+	Vector3 GetNormal(const Vector2& barycentrics) const
 	{
-		float w = 1.f - u - v;
-		return Normalize(v0.normal * u + v1.normal * v + v2.normal * w);
+		float w = 1.f - barycentrics.x - barycentrics.y;
+		return Normalize(v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * w);
+	}
+
+	Vector2 GetUVs(const Vector2& barycentrics) const
+	{
+		float w = 1.f - barycentrics.x - barycentrics.y;
+		return v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * w;
 	}
 
 	HitInfo Intersect(const Ray& ray) const
@@ -282,8 +326,8 @@ struct Triangle
 		float areaPBC = Magnitude(Cross(b - p, c - p)); // Area of the triangle PBC
 		float areaPCA = Magnitude(Cross(c - p, a - p)); // Area of the triangle PCA
 
-		info.u = areaPBC / areaABC;
-		info.v = areaPCA / areaABC;
+		info.barycentrics.x = areaPBC / areaABC;
+		info.barycentrics.y = areaPCA / areaABC;
 
 		info.hit = true;
 		info.t = t;

@@ -119,10 +119,10 @@ protected:
             const auto& mesh = scene.meshes[hitInfo.meshIndex];
             const auto& material = scene.materials[mesh.materialIndex];
             Vector3 normal = hitInfo.normal;
+            const auto& triangle = mesh.triangles[hitInfo.triangleIndex];
             if (material.smoothShading)
             {
-                const auto& triangle = mesh.triangles[hitInfo.triangleIndex];
-                normal = triangle.GetNormal(hitInfo.u, hitInfo.v);
+                normal = triangle.GetNormal(hitInfo.barycentrics);
             }
 
             Vector3 offsetOrigin = OffsetRayOrigin(hitInfo.point, hitInfo.normal);
@@ -136,7 +136,7 @@ protected:
                     if (!scene.AnyHit(shadowRay))
                     {
                         float attenuation = 1.0f / (distanceToLight * distanceToLight);
-                        L += material.GetAlbedo(hitInfo.u, hitInfo.v) * std::max(0.f, Dot(normal, dirToLight)) * attenuation * light.intensity;
+                        L += material.GetAlbedo(triangle.GetUVs(hitInfo.barycentrics)) * std::max(0.f, Dot(normal, dirToLight)) * attenuation * light.intensity;
                     }
                 }
             }
@@ -144,7 +144,7 @@ protected:
             {
                 Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                 Ray reflectionRay{ offsetOrigin,  reflectionDir };
-                L += material.GetAlbedo(hitInfo.u, hitInfo.v) * TraceRay(reflectionRay, depth + 1);
+                L += material.GetAlbedo(triangle.GetUVs(hitInfo.barycentrics)) * TraceRay(reflectionRay, depth + 1);
             }
             else if (material.type == Material::Type::REFRACTIVE)
             {

@@ -53,6 +53,22 @@ std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr)
 	return result;
 }
 
+std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr) 
+{
+	assert(arr.Size() % 3 == 0);
+	std::vector<Vector2> result;
+	result.reserve(arr.Size() / 3);
+	for(uint32_t i = 0; i < arr.Size(); i += 3) {
+		result.emplace_back(
+			Vector2(
+				static_cast<float>(arr[i].GetDouble()), 
+				static_cast<float>(arr[i+1].GetDouble())
+			)
+		);
+	}
+	return result;
+}
+
 std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr) 
 {
 	assert(arr.Size() % 3 == 0);
@@ -90,10 +106,10 @@ public:
 		this->albedo = albedo;
 	}
 
-	Vector3 GetAlbedo(float u, float v) const
+	Vector3 GetAlbedo(const Vector2& uv) const
 	{
 		if (texture)
-			return texture->GetColor(u, v);
+			return texture->GetColor(uv);
 
 		return albedo;
 	}
@@ -205,6 +221,7 @@ protected:
 	inline static const std::string kPositionStr{ "position" };
 	inline static const std::string kObjectsStr{ "objects" };
 	inline static const std::string kVerticesStr{ "vertices" };
+	inline static const std::string kUVsStr{ "uvs" };
 	inline static const std::string kTrianglesStr{ "triangles" };
 	inline static const std::string kMaterialsStr{ "materials" };
 	inline static const std::string kTypeStr{ "type" };
@@ -303,6 +320,10 @@ protected:
 				assert(!verticesValue.IsNull() && verticesValue.IsArray());
 				std::vector<Vector3> vertices = loadVertices(verticesValue.GetArray());
 
+				const Value& uvsValue = it->FindMember(kUVsStr.c_str())->value;
+				assert(!uvsValue.IsNull() && uvsValue.IsArray());
+				std::vector<Vector2> uvs = loadUVs(uvsValue.GetArray());
+
 				const Value& trianglesValue = it->FindMember(kTrianglesStr.c_str())->value;
 				assert(!trianglesValue.IsNull() && trianglesValue.IsArray());
 				std::vector<uint32_t> indices = loadIndices(trianglesValue.GetArray());
@@ -334,16 +355,23 @@ protected:
 					const auto& i0 = indices[i];
 					const auto& i1 = indices[i + 1];
 					const auto& i2 = indices[i + 2];
+
 					const auto& v0 = vertices[i0];
 					const auto& v1 = vertices[i1];
 					const auto& v2 = vertices[i2];
+
 					const auto& n0 = vertexNormals[i0];
 					const auto& n1 = vertexNormals[i1];
 					const auto& n2 = vertexNormals[i2];
+
+					const auto& uv0 = uvs[i0];
+					const auto& uv1 = uvs[i1];
+					const auto& uv2 = uvs[i2];
+
 					mesh.triangles.emplace_back(
-						Vertex{v0, n0},
-						Vertex{v1, n1},
-						Vertex{v2, n2}
+						Vertex{v0, n0, uv0},
+						Vertex{v1, n1, uv1},
+						Vertex{v2, n2, uv2}
 					);
 				}
 

@@ -10,7 +10,7 @@ public:
 
 	virtual ~Texture() = default;
 
-	virtual Vector3 GetColor(float u, float v) const = 0;
+	virtual Vector3 GetColor(const Vector2& uv) const = 0;
 
 	std::string name;
 };
@@ -21,7 +21,7 @@ public:
 
 	AlbedoTexture(std::string name, Vector3 albedo) : Texture(std::move(name)), albedo(std::move(albedo)) {}
 
-	Vector3 GetColor(float u, float v) const override { return albedo; }
+	Vector3 GetColor(const Vector2& uv) const override { return albedo; }
 
 private:
 
@@ -36,12 +36,14 @@ public:
 		: Texture(std::move(name)), edgeColor(std::move(edgeColor)), innerColor(std::move(innerColor)), edgeWidth(edgeWidth)
 	{ }
 
-	Vector3 GetColor(float u, float v) const override 
+	Vector3 GetColor(const Vector2& uv) const override 
 	{ 
+		const float& u = uv.x;
+		const float& v = uv.y;
 		if (u < edgeWidth || v < edgeWidth)
 			return edgeColor;
 
-		if (1 - u - v < edgeWidth)
+		if (1.f - u - v < edgeWidth)
 			return edgeColor;
 
 		return innerColor;
@@ -64,8 +66,10 @@ public:
 		numSquares = 1.f / squareSize;
 	}
 
-	Vector3 GetColor(float u, float v) const override 
+	Vector3 GetColor(const Vector2& uv) const override 
 	{ 
+		const float& u = uv.x;
+		const float& v = uv.y;
 		int uIndex = static_cast<int>(u * numSquares);
 		int vIndex = static_cast<int>(v * numSquares);
 
@@ -89,7 +93,7 @@ public:
 		: Texture(std::move(name)), filePath(std::move(filePath))
 	{ }
 
-	Vector3 GetColor(float u, float v) const override { return {}; }
+	Vector3 GetColor(const Vector2& uv) const override { return {}; }
 	
 private:
 	std::string filePath;
