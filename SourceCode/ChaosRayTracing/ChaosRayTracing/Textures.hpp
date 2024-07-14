@@ -36,7 +36,16 @@ public:
 		: Texture(std::move(name)), edgeColor(std::move(edgeColor)), innerColor(std::move(innerColor)), edgeWidth(edgeWidth)
 	{ }
 
-	Vector3 GetColor(float u, float v) const override { return {}; }
+	Vector3 GetColor(float u, float v) const override 
+	{ 
+		if (u < edgeWidth || v < edgeWidth)
+			return edgeColor;
+
+		if (1 - u - v < edgeWidth)
+			return edgeColor;
+
+		return innerColor;
+	}
 
 private:
 
