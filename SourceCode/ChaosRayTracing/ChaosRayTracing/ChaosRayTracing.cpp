@@ -5,10 +5,11 @@ int main()
     std::vector<std::unique_ptr<Scene>> scenes;
 
     // Add scenes to the vector using make_unique
-    scenes.push_back(std::make_unique<Scene>("scene0.crtscene"));
+    //scenes.push_back(std::make_unique<Scene>("scene0.crtscene"));
     //scenes.push_back(std::make_unique<Scene>("scene1.crtscene"));
-    //scenes.push_back(std::make_unique<Scene>("scene2.crtscene"));
+    scenes.push_back(std::make_unique<Scene>("scene2.crtscene"));
     //scenes.push_back(std::make_unique<Scene>("scene3.crtscene"));
+    scenes.push_back(std::make_unique<Scene>("scene4.crtscene"));
 
     // Loop over the scenes and render them
     for (auto& scene : scenes) {

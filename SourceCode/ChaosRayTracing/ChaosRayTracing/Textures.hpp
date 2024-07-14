@@ -60,14 +60,26 @@ public:
 
 	CheckerTexture(std::string name, Vector3 colorA, Vector3 colorB, float squareSize) 
 		: Texture(std::move(name)), colorA(std::move(colorA)), colorB(std::move(colorB)), squareSize(squareSize)
-	{ }
+	{ 
+		numSquares = 1.f / squareSize;
+	}
 
-	Vector3 GetColor(float u, float v) const override { return {}; }
+	Vector3 GetColor(float u, float v) const override 
+	{ 
+		int uIndex = static_cast<int>(u * numSquares);
+		int vIndex = static_cast<int>(v * numSquares);
+
+		if (uIndex % 2 == vIndex % 2)
+			return colorA;
+
+		return colorB;
+	}
 
 private:
 	Vector3 colorA;
 	Vector3 colorB;
 	float squareSize;
+	float numSquares;
 };
 
 class BitmapTexture : public Texture 
