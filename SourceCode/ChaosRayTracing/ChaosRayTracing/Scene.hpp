@@ -69,8 +69,9 @@ struct Light
 	Vector3 position;
 };
 
-struct Material
+class Material
 {
+public:
 	enum Type
 	{
 		CONSTANT,
@@ -80,11 +81,26 @@ struct Material
 	};
 
 	Type type;
-	Vector3 albedo{ 1.f };
 	float ior;
 	bool smoothShading;
-	bool hasTexture = false;
-	std::string textureName;
+	std::shared_ptr<const Texture> texture;
+
+	void SetAlbedo(Vector3 albedo)
+	{
+		this->albedo = albedo;
+	}
+
+	Vector3 GetAlbedo(float u, float v) const
+	{
+		if (texture)
+			return texture->GetColor(u, v);
+
+		return albedo;
+	}
+
+private:
+
+	Vector3 albedo{ 1.f };
 };
 
 class Mesh
@@ -171,7 +187,7 @@ public:
 	Camera camera;
 	std::vector<Mesh> meshes;
 	std::vector<Material> materials;
-	std::vector<std::unique_ptr<Texture>> textures;
+	std::map<std::string, std::shared_ptr<const Texture>> textures;
 	std::vector<Light> lights;
 	Settings settings;
 
@@ -276,49 +292,6 @@ protected:
 			}
 		}
 
-		const Value& materialsValue = doc.FindMember(kMaterialsStr.c_str())->value;
-		if (!materialsValue.IsNull() && materialsValue.IsArray())
-		{
-			for (Value::ConstValueIterator it = materialsValue.Begin(); it != materialsValue.End(); ++it)
-			{
-				Material material;
-
-				const Value& typeValue = it->FindMember(kTypeStr.c_str())->value;
-				assert(!typeValue.IsNull() && typeValue.IsString());
-				const auto typeStr = std::string(typeValue.GetString());
-				material.type = materialTypeMap.at(typeStr);
-				if (material.type == Material::Type::REFRACTIVE)
-				{
-					const Value& iorVal = it->FindMember(kIorStr.c_str())->value;
-					assert(!iorVal.IsNull() && iorVal.IsFloat());
-					material.ior = iorVal.GetFloat();
-
-				} else {
-					const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
-					assert(!albedoVal.IsNull());
-					if (albedoVal.IsArray())
-					{
-						material.albedo = loadVector(albedoVal.GetArray());
-					}
-					else if (albedoVal.IsString())
-					{
-						const auto typeStr = std::string(typeValue.GetString());
-						material.textureName = std::string(albedoVal.GetString());
-					}
-					else
-					{
-						std::cout << "Invalid material" << std::endl;
-					}
-				}
-
-				const Value& smoothShadingVal = it->FindMember(kSmoothShadingStr.c_str())->value;
-				assert(!smoothShadingVal.IsNull() && smoothShadingVal.IsBool());
-				material.smoothShading = smoothShadingVal.GetBool();
-
-				materials.push_back(material);
-			}
-		}
-
 		const Value& objectsValue = doc.FindMember(kObjectsStr.c_str())->value;
 		if(!objectsValue.IsNull() && objectsValue.IsArray()) 
 		{
@@ -401,7 +374,7 @@ protected:
 					const Value& albedoValue = it->FindMember(kTexturesAlbedoStr.c_str())->value;
 					assert(!albedoValue.IsNull() && albedoValue.IsArray());
 					Vector3 albedo = loadVector(albedoValue.GetArray());
-					textures.push_back(std::make_unique<AlbedoTexture>(std::move(name), std::move(albedo)));
+					textures.emplace(name, std::make_shared<const AlbedoTexture>(name, std::move(albedo)));
 				}
 				else if (type == "edges")
 				{
@@ -417,7 +390,7 @@ protected:
 					assert(!edgeWidthValue.IsNull() && edgeWidthValue.IsFloat());
 					float edgeWidth = edgeWidthValue.GetFloat();
 
-					textures.push_back(std::make_unique<EdgesTexture>(std::move(name), std::move(edgeColor), std::move(innerColor), edgeWidth));
+					textures.emplace(name, std::make_shared<const EdgesTexture>(name, std::move(edgeColor), std::move(innerColor), edgeWidth));
 				}
 				else if (type == "checker")
 				{
@@ -433,7 +406,7 @@ protected:
 					assert(!squareSizeValue.IsNull() && squareSizeValue.IsFloat());
 					float squareSize = squareSizeValue.GetFloat();
 
-					textures.push_back(std::make_unique<CheckerTexture>(std::move(name), std::move(colorA), std::move(colorB), squareSize));
+					textures.emplace(name, std::make_shared<const CheckerTexture>(name, std::move(colorA), std::move(colorB), squareSize));
 				}
 				else if (type == "bitmap")
 				{
@@ -441,8 +414,59 @@ protected:
 					assert(!pathValue.IsNull() && pathValue.IsString());
 					std::string path = std::string(pathValue.GetString());
 
-					textures.push_back(std::make_unique<BitmapTexture>(std::move(name), std::move(path)));
+					textures.emplace(name, std::make_shared<const BitmapTexture>(name, std::move(path)));
 				}
+				else
+				{
+					std::cout << "Invalid texture type." << std::endl;
+				}
+			}
+		}
+
+		// Load materials
+		const Value& materialsValue = doc.FindMember(kMaterialsStr.c_str())->value;
+		if (!materialsValue.IsNull() && materialsValue.IsArray())
+		{
+			for (Value::ConstValueIterator it = materialsValue.Begin(); it != materialsValue.End(); ++it)
+			{
+				Material material;
+
+				const Value& typeValue = it->FindMember(kTypeStr.c_str())->value;
+				assert(!typeValue.IsNull() && typeValue.IsString());
+				const auto typeStr = std::string(typeValue.GetString());
+				material.type = materialTypeMap.at(typeStr);
+				if (material.type == Material::Type::REFRACTIVE)
+				{
+					const Value& iorVal = it->FindMember(kIorStr.c_str())->value;
+					assert(!iorVal.IsNull() && iorVal.IsFloat());
+					material.ior = iorVal.GetFloat();
+
+				} else {
+					const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
+					assert(!albedoVal.IsNull());
+					if (albedoVal.IsArray())
+					{
+						material.SetAlbedo(loadVector(albedoVal.GetArray()));
+					}
+					else if (albedoVal.IsString())
+					{
+						const auto typeStr = std::string(typeValue.GetString());
+						std::string textureName = std::string(albedoVal.GetString());
+						auto it = textures.find(textureName);
+						if (it != textures.end())
+							material.texture = it->second;
+					}
+					else
+					{
+						std::cout << "Invalid material" << std::endl;
+					}
+				}
+
+				const Value& smoothShadingVal = it->FindMember(kSmoothShadingStr.c_str())->value;
+				assert(!smoothShadingVal.IsNull() && smoothShadingVal.IsBool());
+				material.smoothShading = smoothShadingVal.GetBool();
+
+				materials.push_back(material);
 			}
 		}
 

@@ -8,9 +8,9 @@ public:
 
 	Texture(std::string name) : name(std::move(name)) {}
 
-	virtual Vector3 GetColor(float u, float v) = 0;
-
 	virtual ~Texture() = default;
+
+	virtual Vector3 GetColor(float u, float v) const = 0;
 
 	std::string name;
 };
@@ -21,7 +21,7 @@ public:
 
 	AlbedoTexture(std::string name, Vector3 albedo) : Texture(std::move(name)), albedo(std::move(albedo)) {}
 
-	Vector3 GetColor(float u, float v) override { return albedo; }
+	Vector3 GetColor(float u, float v) const override { return albedo; }
 
 private:
 
@@ -36,7 +36,7 @@ public:
 		: Texture(std::move(name)), edgeColor(std::move(edgeColor)), innerColor(std::move(innerColor)), edgeWidth(edgeWidth)
 	{ }
 
-	Vector3 GetColor(float u, float v) override { return {}; }
+	Vector3 GetColor(float u, float v) const override { return {}; }
 
 private:
 
@@ -53,7 +53,7 @@ public:
 		: Texture(std::move(name)), colorA(std::move(colorA)), colorB(std::move(colorB)), squareSize(squareSize)
 	{ }
 
-	Vector3 GetColor(float u, float v) override { return {}; }
+	Vector3 GetColor(float u, float v) const override { return {}; }
 
 private:
 	Vector3 colorA;
@@ -68,7 +68,7 @@ public:
 		: Texture(std::move(name)), filePath(std::move(filePath))
 	{ }
 
-	Vector3 GetColor(float u, float v) override { return {}; }
+	Vector3 GetColor(float u, float v) const override { return {}; }
 	
 private:
 	std::string filePath;

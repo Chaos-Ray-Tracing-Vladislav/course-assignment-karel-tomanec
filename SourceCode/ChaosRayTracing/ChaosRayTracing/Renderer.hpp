@@ -136,7 +136,7 @@ protected:
                     if (!scene.AnyHit(shadowRay))
                     {
                         float attenuation = 1.0f / (distanceToLight * distanceToLight);
-                        L += material.albedo * std::max(0.f, Dot(normal, dirToLight)) * attenuation * light.intensity;
+                        L += material.GetAlbedo(hitInfo.u, hitInfo.v) * std::max(0.f, Dot(normal, dirToLight)) * attenuation * light.intensity;
                     }
                 }
             }
@@ -144,7 +144,7 @@ protected:
             {
                 Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                 Ray reflectionRay{ offsetOrigin,  reflectionDir };
-                L += material.albedo * TraceRay(reflectionRay, depth + 1);
+                L += material.GetAlbedo(hitInfo.u, hitInfo.v) * TraceRay(reflectionRay, depth + 1);
             }
             else if (material.type == Material::Type::REFRACTIVE)
             {
