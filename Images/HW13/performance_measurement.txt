@@ -6,3 +6,4 @@ MaxClockSpeed  Name                                   NumberOfCores  NumberOfLog
 
 Serial solution: ~84.8333 s
 Parallel rows: ~7.34397 s
+Parallel tiles: ~5.84938 s

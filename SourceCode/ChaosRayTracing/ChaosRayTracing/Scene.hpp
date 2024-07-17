@@ -150,13 +150,13 @@ public:
 	{
 		uint32_t width;
 		uint32_t height;
+		uint32_t bucketSize;
 	};
 	struct Settings
 	{
 		std::string sceneName;
 		Vector3 backgroundColor;
 		ImageSettings imageSettings;
-		uint32_t bucketSize;
 	};
 
 
@@ -280,13 +280,13 @@ protected:
 				assert(!imageWidthVal.IsNull() && imageWidthVal.IsInt() && !imageHeightVal.IsNull() && imageHeightVal.IsInt());
 				settings.imageSettings.width = imageWidthVal.GetInt();
 				settings.imageSettings.height = imageHeightVal.GetInt();
-			}
-			
-			if (settingsVal.HasMember(kBucketSizeStr.c_str()))
-			{
-				const Value& bucketSizeVal = settingsVal.FindMember(kBucketSizeStr.c_str())->value;
-				assert(!bucketSizeVal.IsNull() && bucketSizeVal.IsInt());
-				settings.bucketSize = bucketSizeVal.GetInt();
+
+				if (imageSettingsVal.HasMember(kBucketSizeStr.c_str()))
+				{
+					const Value& bucketSizeVal = imageSettingsVal.FindMember(kBucketSizeStr.c_str())->value;
+					assert(!bucketSizeVal.IsNull() && bucketSizeVal.IsInt());
+					settings.imageSettings.bucketSize = bucketSizeVal.GetInt();
+				}
 			}
 		}
 
