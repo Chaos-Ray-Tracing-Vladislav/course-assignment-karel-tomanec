@@ -156,6 +156,7 @@ public:
 		std::string sceneName;
 		Vector3 backgroundColor;
 		ImageSettings imageSettings;
+		uint32_t bucketSize;
 	};
 
 
@@ -218,6 +219,7 @@ protected:
 	inline static const std::string kImageSettingsStr{ "image_settings" };
 	inline static const std::string kImageWidthStr{ "width" };
 	inline static const std::string kImageHeightStr{ "height" };
+	inline static const std::string kBucketSizeStr{ "bucket_size" };
 	inline static const std::string kCameraStr{ "camera" };
 	inline static const std::string kMatrixStr{ "matrix" };
 	inline static const std::string kLightsStr{ "lights" };
@@ -278,6 +280,13 @@ protected:
 				assert(!imageWidthVal.IsNull() && imageWidthVal.IsInt() && !imageHeightVal.IsNull() && imageHeightVal.IsInt());
 				settings.imageSettings.width = imageWidthVal.GetInt();
 				settings.imageSettings.height = imageHeightVal.GetInt();
+			}
+			
+			if (settingsVal.HasMember(kBucketSizeStr.c_str()))
+			{
+				const Value& bucketSizeVal = settingsVal.FindMember(kBucketSizeStr.c_str())->value;
+				assert(!bucketSizeVal.IsNull() && bucketSizeVal.IsInt());
+				settings.bucketSize = bucketSizeVal.GetInt();
 			}
 		}
 
