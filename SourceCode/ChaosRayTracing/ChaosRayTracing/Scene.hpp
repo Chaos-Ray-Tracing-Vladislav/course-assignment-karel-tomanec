@@ -320,9 +320,13 @@ protected:
 				assert(!verticesValue.IsNull() && verticesValue.IsArray());
 				std::vector<Vector3> vertices = loadVertices(verticesValue.GetArray());
 
-				const Value& uvsValue = it->FindMember(kUVsStr.c_str())->value;
-				assert(!uvsValue.IsNull() && uvsValue.IsArray());
-				std::vector<Vector2> uvs = loadUVs(uvsValue.GetArray());
+				std::vector<Vector2> uvs;
+				if (it->HasMember(kUVsStr.c_str()))
+				{
+					const Value& uvsValue = it->FindMember(kUVsStr.c_str())->value;
+					assert(!uvsValue.IsNull() && uvsValue.IsArray());
+					uvs = loadUVs(uvsValue.GetArray());
+				}
 
 				const Value& trianglesValue = it->FindMember(kTrianglesStr.c_str())->value;
 				assert(!trianglesValue.IsNull() && trianglesValue.IsArray());
@@ -364,9 +368,9 @@ protected:
 					const auto& n1 = vertexNormals[i1];
 					const auto& n2 = vertexNormals[i2];
 
-					const auto& uv0 = uvs[i0];
-					const auto& uv1 = uvs[i1];
-					const auto& uv2 = uvs[i2];
+					const auto& uv0 = !uvs.empty() ? uvs[i0] : 1.f;
+					const auto& uv1 = !uvs.empty() ? uvs[i1] : 1.f;
+					const auto& uv2 = !uvs.empty() ? uvs[i2] : 1.f;
 
 					mesh.triangles.emplace_back(
 						Vertex{v0, n0, uv0},
