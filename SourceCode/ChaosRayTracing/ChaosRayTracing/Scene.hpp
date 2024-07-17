@@ -187,17 +187,21 @@ public:
 
 	bool AnyHit(const Ray& ray) const
 	{
+		bool hit = false;
 		for (const auto& mesh : meshes)
 		{
 			const auto& material = materials[mesh.materialIndex];
 			if (material.type == Material::Type::REFRACTIVE)
 				continue;
-			return std::any_of(mesh.triangles.begin(), mesh.triangles.end(), [&ray](const Triangle& triangle)
+			hit = std::any_of(mesh.triangles.begin(), mesh.triangles.end(), [&ray](const Triangle& triangle)
 				{
 					HitInfo hitInfo = triangle.Intersect(ray);
 					return hitInfo.hit;
 				});
+			if (hit)
+				break;
 		}
+		return hit;
 	}
 
 	Camera camera;
