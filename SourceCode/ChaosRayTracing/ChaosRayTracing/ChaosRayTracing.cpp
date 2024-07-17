@@ -10,7 +10,19 @@ int main()
     // Loop over the scenes and render them
     for (auto& scene : scenes) {
         Renderer renderer(*scene);  // Pass the dereferenced unique_ptr to the renderer
+
+        // Start time
+        auto start = std::chrono::high_resolution_clock::now();
+
+        // Render the image
         renderer.RenderImage();
+
+        // End time
+        auto end = std::chrono::high_resolution_clock::now();
+
+        // Calculate duration
+        std::chrono::duration<double> duration = end - start;
+        std::cout << "Rendering time: " << duration.count() << " seconds" << std::endl;
     }
 
 	return 0;
