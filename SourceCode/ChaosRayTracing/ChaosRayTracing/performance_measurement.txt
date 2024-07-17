@@ -4,5 +4,5 @@ CPU:
 MaxClockSpeed  Name                                   NumberOfCores  NumberOfLogicalProcessors
 4201           AMD Ryzen 9 7950X3D 16-Core Processor  16             32
 
-Serial solution: ~59.0741 s
-Parallel rows: ~5.26966 s
+Serial solution: ~84.8333 s
+Parallel rows: ~7.34397 s
