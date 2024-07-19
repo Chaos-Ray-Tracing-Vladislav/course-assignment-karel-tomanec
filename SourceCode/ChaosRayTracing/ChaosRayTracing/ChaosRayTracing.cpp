@@ -6,6 +6,7 @@ int main()
 
     // Add scenes to the vector using make_unique
     scenes.push_back(std::make_unique<Scene>("scene0.crtscene"));
+    scenes.push_back(std::make_unique<Scene>("scene1.crtscene"));
 
     // Loop over the scenes and render them
     for (auto& scene : scenes) {
@@ -22,7 +23,7 @@ int main()
 
         // Calculate duration
         std::chrono::duration<double> duration = end - start;
-        std::cout << "Rendering time: " << duration.count() << " seconds" << std::endl;
+        std::cout << scene->settings.sceneName + " rendering time: " << duration.count() << " seconds" << std::endl;
     }
 
 	return 0;
