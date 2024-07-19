@@ -138,6 +138,7 @@
     <ClCompile Include="ChaosRayTracing.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AABB.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="Math3D.hpp" />
     <ClInclude Include="PPMWriter.hpp" />
