@@ -19,14 +19,18 @@ public:
 		minPoint = max(minPoint, max(triangle.v0.position, max(triangle.v1.position, triangle.v2.position)));
 	}
 
-	AABB(const std::vector<Triangle>& triangles)
+	AABB(const std::vector<Triangle>& triangles, Range range)
 	{
 		AABB resAABB;
-		for (const auto& triangle : triangles)
-		{
-			AABB triAABB(triangle);
-			resAABB |= triAABB;
-		}
+
+		auto start = triangles.begin() + range.start;
+		auto end = triangles.begin() + range.end;
+
+		std::for_each(start, end, [&resAABB](const auto& triangle)
+			{
+				AABB triAABB(triangle);
+				resAABB |= triAABB;
+			};
 
 		minPoint = resAABB.minPoint;
 		maxPoint = resAABB.maxPoint;

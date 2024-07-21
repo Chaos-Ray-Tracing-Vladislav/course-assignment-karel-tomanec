@@ -465,3 +465,10 @@ Matrix4 operator*(const Matrix4& A, const Matrix4& B)
 	}
 	return result;
 }
+
+struct Range {
+	uint32_t start;
+	uint32_t end;
+
+	uint32_t count() const { return end - start; }
+};
