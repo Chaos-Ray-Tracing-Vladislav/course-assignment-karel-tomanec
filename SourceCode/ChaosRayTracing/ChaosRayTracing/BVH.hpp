@@ -149,7 +149,7 @@ private:
 			uint32_t mid = (range.start + range.end) / 2;
 			Vector3 extent = boundingBox.extent();    // Find the axis with the largest extent
 			uint8_t splitAxis = static_cast<uint8_t>(std::distance(std::begin(extent.data), std::max_element(std::begin(extent.data), std::end(extent.data))));
-			std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
+			std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
 				{
 					return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
 				});
