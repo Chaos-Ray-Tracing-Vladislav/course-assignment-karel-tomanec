@@ -94,8 +94,13 @@ public:
 			float t1 = (minPoint[d] - ray.origin[d]) * ray.directionNInv[d];
 			float t2 = (maxPoint[d] - ray.origin[d]) * ray.directionNInv[d];
 
-			minT = std::max(minT, std::min(t1, t2));
-			maxT = std::min(maxT, std::max(t1, t2));
+			if (t1 > t2)
+				std::swap(t1, t2);
+
+			t2 *= 1.f + std::numeric_limits<float>::epsilon();
+
+			minT = std::max(minT, t1);
+			maxT = std::min(maxT, t2);
 		}
 
 		return minT < maxT;
