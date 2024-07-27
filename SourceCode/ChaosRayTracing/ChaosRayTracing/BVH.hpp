@@ -7,7 +7,7 @@
 #include "AABB.hpp"
 #include "Material.hpp"
 
-struct BVHNode 
+struct BVHNode
 {
 	AABB boundingBox;
 	union {
@@ -23,11 +23,11 @@ struct BVHNode
 	}
 };
 
-class BVH 
+class BVH
 {
 public:
 
-	enum class SplitHuristic
+	enum class SplitHeuristic
 	{
 		Equal,
 		Middle,
@@ -88,7 +88,7 @@ public:
 		return hitInfo.hit;
 	}
 
-	HitInfo traverse(Ray& ray, const std::function<bool(HitInfo&, uint32_t, uint32_t)>& hitFunction) const
+	HitInfo traverse(const Ray& ray, const std::function<bool(HitInfo&, uint32_t, uint32_t)>& hitFunction) const
 	{
 		HitInfo hitInfo;
 		if (nodes.empty())
@@ -151,12 +151,12 @@ private:
 		else
 		{
 			uint32_t mid = (range.start + range.end) / 2;
-			Vector3 extent = boundingBox.extent();    // Find the axis with the largest extent
-			uint8_t splitAxis = static_cast<uint8_t>(std::distance(std::begin(extent.data), std::max_element(std::begin(extent.data), std::end(extent.data))));
+			Vector3 extent = boundingBox.extent();
+			uint8_t splitAxis = static_cast<uint8_t>(std::distance(std::begin(extent.data), std::ranges::max_element(extent.data)));
 
-			switch(splitHeuristic)
+			switch (splitHeuristic)
 			{
-			case SplitHuristic::Middle:
+				case SplitHeuristic::Middle:
 				{
 					float midVal = (boundingBox.minPoint[splitAxis] + boundingBox.maxPoint[splitAxis]) * 0.5f;
 					auto midIt = std::partition(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis, midVal](const Triangle& tri)
@@ -167,7 +167,7 @@ private:
 					if (midIt != triangles.begin() + range.start && midIt != triangles.begin() + range.end)
 						break;
 				}
-			case SplitHuristic::Equal:
+				case SplitHeuristic::Equal:
 				{
 					mid = (range.start + range.end) / 2;
 					std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
@@ -176,10 +176,10 @@ private:
 						});
 				}
 				break;
-			case SplitHuristic::SAH:
-			default:
+				case SplitHeuristic::SAH:
+				default:
 				{
-					if(range.count() == 2)
+					if (range.count() == 2)
 					{
 						mid = (range.start + range.end) / 2;
 						std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
@@ -191,18 +191,18 @@ private:
 					{
 						float minCost = std::numeric_limits<float>::max();
 						float boundingBoxArea = boundingBox.area();
-						for(uint8_t axis = 0; axis < 3; axis++)
+						for (uint8_t axis = 0; axis < 3; axis++)
 						{
 							std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [axis](const Triangle& triA, const Triangle& triB)
 								{
 									return triA.Centroid()[axis] < triB.Centroid()[axis];
 								});
-							for(uint32_t index = range.start + 1; index < range.end; index++)
+							for (uint32_t index = range.start + 1; index < range.end; index++)
 							{
 								AABB left = AABB(triangles, Range(range.start, index));
 								AABB right = AABB(triangles, Range{ index, range.end });
 								float cost = ((index - range.start) * left.area() + (range.end - index) * right.area()) / boundingBoxArea;
-								if(cost < minCost)
+								if (cost < minCost)
 								{
 									minCost = cost;
 									splitAxis = axis;
@@ -220,16 +220,19 @@ private:
 				break;
 			}
 
-
 			BVHNode interiorNode{
 				.boundingBox = boundingBox,
 				.primitiveCount = 0,
 				.splitAxis = splitAxis
 			};
+
 			uint32_t interiorNodeIndex = static_cast<uint32_t>(nodes.size());
 			nodes.emplace_back(interiorNode);
+
 			build(triangles, Range{ range.start, mid }, depth + 1);
+
 			nodes[interiorNodeIndex].secondChildOffset = static_cast<uint32_t>(nodes.size());
+
 			build(triangles, Range{ mid, range.end }, depth + 1);
 		}
 	}
@@ -237,6 +240,5 @@ private:
 	std::vector<BVHNode> nodes;
 	static constexpr uint32_t maxDepth = 10;
 	static constexpr uint32_t maxTriangleCountPerLeaf = 4;
-	static constexpr SplitHuristic splitHeuristic = SplitHuristic::SAH;
-
+	static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::SAH;
 };
