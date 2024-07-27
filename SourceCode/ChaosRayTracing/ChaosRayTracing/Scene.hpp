@@ -13,6 +13,7 @@
 #include <map>
 
 #include "BVH.hpp"
+#include "Material.hpp"
 #include "Textures.hpp"
 
 // Helper functions
@@ -87,40 +88,6 @@ struct Light
 	Vector3 position;
 };
 
-class Material
-{
-public:
-	enum Type
-	{
-		CONSTANT,
-		DIFFUSE,
-		REFLECTIVE,
-		REFRACTIVE
-	};
-
-	Type type;
-	float ior;
-	bool smoothShading;
-	std::shared_ptr<const Texture> texture;
-
-	void SetAlbedo(Vector3 albedo)
-	{
-		this->albedo = albedo;
-	}
-
-	Vector3 GetAlbedo(const Vector2& barycentrics, const Vector2& uv) const
-	{
-		if (texture)
-			return texture->GetColor(barycentrics, uv);
-
-		return albedo;
-	}
-
-private:
-
-	Vector3 albedo{ 1.f };
-};
-
 class Scene
 {
 public:
@@ -180,18 +147,19 @@ public:
 
 	bool AnyHit(const Ray& ray) const
 	{
-		return std::ranges::any_of(triangles, [&ray, this](const Triangle& triangle)
-		{
-			HitInfo hitInfo = triangle.Intersect(ray);
-			if (hitInfo.hit)
-			{
-				const auto& material = materials[triangle.materialIndex];
-				if (material.type == Material::Type::REFRACTIVE)
-					return false;
-				return true;
-			}
-			return false;
-		});
+		return bvh.anyHit(triangles, materials, ray);
+		//return std::ranges::any_of(triangles, [&ray, this](const Triangle& triangle)
+		//{
+		//	HitInfo hitInfo = triangle.Intersect(ray);
+		//	if (hitInfo.hit)
+		//	{
+		//		const auto& material = materials[triangle.materialIndex];
+		//		if (material.type == Material::Type::REFRACTIVE)
+		//			return false;
+		//		return true;
+		//	}
+		//	return false;
+		//});
 	}
 
 	Camera camera;

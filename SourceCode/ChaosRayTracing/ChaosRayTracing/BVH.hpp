@@ -1,9 +1,11 @@
 #pragma once
+#include <functional>
 #include <stack>
 #include <vector>
 
 #include "Math3D.hpp"
 #include "AABB.hpp"
+#include "Material.hpp"
 
 struct BVHNode 
 {
@@ -36,13 +38,60 @@ public:
 
 	HitInfo closestHit(const std::vector<Triangle>& triangles, const Ray& ray) const
 	{
+		std::function closestHitFunc = [&triangles, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
+			{
+				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
+				{
+					const auto& triangle = triangles[triangleIndex];
+					HitInfo currHitInfo = triangle.Intersect(ray);
+
+					if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
+					{
+						currHitInfo.triangleIndex = triangleIndex;
+						hitInfo = currHitInfo;
+					}
+				}
+				return false;
+			};
+		return traverse(ray, closestHitFunc);
+	}
+
+	bool anyHit(const std::vector<Triangle>& triangles, const std::vector<Material>& materials, const Ray& ray) const
+	{
+		std::function anyHitFunc = [&triangles, &materials, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
+			{
+				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
+				{
+					const auto& triangle = triangles[triangleIndex];
+					HitInfo currHitInfo = triangle.Intersect(ray);
+
+					if (currHitInfo.hit)
+					{
+						const auto& material = materials[triangle.materialIndex];
+						if (material.type != Material::Type::REFRACTIVE)
+						{
+							hitInfo.hit = true;
+							return true;
+						}
+					}
+				}
+				return false;
+			};
+		HitInfo hitInfo = traverse(ray, anyHitFunc);
+		return hitInfo.hit;
+	}
+
+	HitInfo traverse(const Ray& ray, std::function<bool(HitInfo&, uint32_t, uint32_t)> hitFunction) const
+	{
 		HitInfo hitInfo;
 		if (nodes.empty())
 			return hitInfo;
 
 		// Traversal
 		std::stack<uint32_t> nodesToTraverse;
+		// Insert root node index
 		nodesToTraverse.emplace(0);
+		// Traverse the tree
 		while(!nodesToTraverse.empty())
 		{
 			const uint32_t nodeIndex = nodesToTraverse.top();
@@ -54,16 +103,8 @@ public:
 				{
 					uint32_t trianglesOffset = node.primitivesOffset;
 					uint32_t trianglesCount = node.primitiveCount;
-					for (uint32_t triangleIndex = trianglesOffset; triangleIndex < trianglesOffset + trianglesCount; ++triangleIndex)
-					{
-						const auto& triangle = triangles[triangleIndex];
-						HitInfo currHitInfo = triangle.Intersect(ray);
-						if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
-						{
-							currHitInfo.triangleIndex = triangleIndex;
-							hitInfo = currHitInfo;
-						}
-					}
+					if (hitFunction(hitInfo, trianglesOffset, trianglesOffset + trianglesCount))
+						return hitInfo;
 				}
 				else
 				{
@@ -75,24 +116,6 @@ public:
 		}
 
 		return hitInfo;
-	}
-
-	//HitInfo hitInfo;
-	//for (uint32_t triangleIndex = 0; triangleIndex < triangles.size(); ++triangleIndex)
-	//{
-	//	const auto& triangle = triangles[triangleIndex];
-	//	HitInfo currHitInfo = triangle.Intersect(ray);
-	//	if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
-	//	{
-	//		currHitInfo.triangleIndex = triangleIndex;
-	//		hitInfo = currHitInfo;
-	//	}
-	//}
-	//return hitInfo;
-
-	bool anyHit() const
-	{
-		return false;
 	}
 
 private:

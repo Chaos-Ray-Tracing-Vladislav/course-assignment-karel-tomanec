@@ -141,6 +141,7 @@
     <ClInclude Include="AABB.hpp" />
     <ClInclude Include="BVH.hpp" />
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="Material.hpp" />
     <ClInclude Include="Math3D.hpp" />
     <ClInclude Include="PPMWriter.hpp" />
     <ClInclude Include="Renderer.hpp" />

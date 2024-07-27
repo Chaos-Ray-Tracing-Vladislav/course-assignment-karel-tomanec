@@ -49,7 +49,6 @@ public:
 
         Image image(imageWidth, imageHeight);
 
-
         ThreadPool threadPool;
         std::vector<std::future<void>> results;
         uint32_t bucketSize = sceneSettings.imageSettings.bucketSize;
