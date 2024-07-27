@@ -14,7 +14,7 @@
 #include "Textures.hpp"
 
 // Helper functions
-Vector3 loadVector(const rapidjson::Value::ConstArray& arr)
+inline Vector3 loadVector(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() == 3);
 	return Vector3{
@@ -24,7 +24,7 @@ Vector3 loadVector(const rapidjson::Value::ConstArray& arr)
 	};
 }
 
-Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr) 
+inline Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr) 
 {
 	assert(arr.Size() == 9);
 	Matrix4 result = Matrix4::Identity();
@@ -36,7 +36,7 @@ Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr)
 	return result;
 }
 
-std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr) 
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<Vector3> result;
@@ -53,7 +53,7 @@ std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr)
 	return result;
 }
 
-std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr) 
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<Vector2> result;
@@ -69,7 +69,7 @@ std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr)
 	return result;
 }
 
-std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr) 
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<uint32_t> result;
@@ -119,13 +119,6 @@ private:
 	Vector3 albedo{ 1.f };
 };
 
-class Mesh
-{
-public:
-	std::vector<Triangle> triangles;
-	uint32_t materialIndex;
-};
-
 class Scene
 {
 public:
@@ -168,19 +161,14 @@ public:
 	HitInfo ClosestHit(const Ray& ray) const
 	{
 		HitInfo hitInfo;
-		for (uint32_t meshIndex = 0; meshIndex < meshes.size(); ++meshIndex)
+		for (uint32_t triangleIndex = 0; triangleIndex < triangles.size(); ++triangleIndex)
 		{
-			const auto& mesh = meshes[meshIndex];
-			for (uint32_t triangleIndex = 0; triangleIndex < mesh.triangles.size(); ++triangleIndex)
+			const auto& triangle = triangles[triangleIndex];
+			HitInfo currHitInfo = triangle.Intersect(ray);
+			if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
 			{
-				const auto& triangle = mesh.triangles[triangleIndex];
-				HitInfo currHitInfo = triangle.Intersect(ray);
-				if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
-				{
-					currHitInfo.meshIndex = meshIndex;
-					currHitInfo.triangleIndex = triangleIndex;
-					hitInfo = std::move(currHitInfo);
-				}
+				currHitInfo.triangleIndex = triangleIndex;
+				hitInfo = currHitInfo;
 			}
 		}
 		return hitInfo;
@@ -188,25 +176,22 @@ public:
 
 	bool AnyHit(const Ray& ray) const
 	{
-		bool hit = false;
-		for (const auto& mesh : meshes)
+		return std::ranges::any_of(triangles, [&ray, this](const Triangle& triangle)
 		{
-			const auto& material = materials[mesh.materialIndex];
-			if (material.type == Material::Type::REFRACTIVE)
-				continue;
-			hit = std::any_of(mesh.triangles.begin(), mesh.triangles.end(), [&ray](const Triangle& triangle)
-				{
-					HitInfo hitInfo = triangle.Intersect(ray);
-					return hitInfo.hit;
-				});
-			if (hit)
-				break;
-		}
-		return hit;
+			HitInfo hitInfo = triangle.Intersect(ray);
+			if (hitInfo.hit)
+			{
+				const auto& material = materials[triangle.materialIndex];
+				if (material.type == Material::Type::REFRACTIVE)
+					return false;
+				return true;
+			}
+			return false;
+		});
 	}
 
 	Camera camera;
-	std::vector<Mesh> meshes;
+	std::vector<Triangle> triangles;
 	std::vector<Material> materials;
 	std::map<std::string, std::shared_ptr<const Texture>> textures;
 	std::vector<Light> lights;
@@ -327,8 +312,6 @@ protected:
 		{
 			for(Value::ConstValueIterator it = objectsValue.Begin(); it != objectsValue.End(); ++it)
 			{
-				Mesh mesh;
-
 				const Value& verticesValue = it->FindMember(kVerticesStr.c_str())->value;
 				assert(!verticesValue.IsNull() && verticesValue.IsArray());
 				std::vector<Vector3> vertices = loadVertices(verticesValue.GetArray());
@@ -365,8 +348,11 @@ protected:
 				for (uint32_t i = 0; i < vertexNormals.size(); ++i)
 					vertexNormals[i] = Normalize(vertexNormals[i]);
 
+				// Get material index
+				const Value& materialIndexValue = it->FindMember(kMaterialIndexStr.c_str())->value;
+				assert(!materialIndexValue.IsNull() && materialIndexValue.IsInt());
 
-				mesh.triangles.reserve(indices.size() / 3);
+				triangles.reserve(triangles.size() + indices.size() / 3);
 				for (uint32_t i = 0; i < indices.size(); i += 3)
 				{
 					const auto& i0 = indices[i];
@@ -385,18 +371,13 @@ protected:
 					const auto& uv1 = !uvs.empty() ? uvs[i1] : 1.f;
 					const auto& uv2 = !uvs.empty() ? uvs[i2] : 1.f;
 
-					mesh.triangles.emplace_back(
-						Vertex{v0, n0, uv0},
-						Vertex{v1, n1, uv1},
-						Vertex{v2, n2, uv2}
+					triangles.emplace_back(
+						Vertex{ v0, n0, uv0 },
+						Vertex{ v1, n1, uv1 },
+						Vertex{ v2, n2, uv2 },
+						materialIndexValue.GetInt()
 					);
 				}
-
-				const Value& materialIndexValue = it->FindMember(kMaterialIndexStr.c_str())->value;
-				assert(!materialIndexValue.IsNull() && materialIndexValue.IsInt());
-				mesh.materialIndex = materialIndexValue.GetInt();
-
-				meshes.push_back(mesh);
 			}
 		}
 

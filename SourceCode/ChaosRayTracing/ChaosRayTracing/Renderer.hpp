@@ -115,10 +115,9 @@ protected:
         HitInfo hitInfo = scene.ClosestHit(ray);
         if (hitInfo.hit)
         {
-            const auto& mesh = scene.meshes[hitInfo.meshIndex];
-            const auto& material = scene.materials[mesh.materialIndex];
+            const auto& material = scene.materials[hitInfo.materialIndex];
             Vector3 normal = hitInfo.normal;
-            const auto& triangle = mesh.triangles[hitInfo.triangleIndex];
+            const auto& triangle = scene.triangles[hitInfo.triangleIndex];
             if (material.smoothShading)
             {
                 normal = triangle.GetNormal(hitInfo.barycentrics);

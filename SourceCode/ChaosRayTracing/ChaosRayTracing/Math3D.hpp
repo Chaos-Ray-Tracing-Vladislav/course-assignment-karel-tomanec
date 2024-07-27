@@ -255,7 +255,7 @@ struct HitInfo
 	Vector3 point;
 	Vector3 normal;
 	Vector2 barycentrics;
-	uint32_t meshIndex;
+	uint32_t materialIndex;
 	uint32_t triangleIndex;
 };
 
@@ -272,13 +272,13 @@ struct Triangle
 	Vertex v1;
 	Vertex v2;
 
+	uint32_t materialIndex;
+
 	Vector3 faceNormal;
 
-	Triangle(Vertex a, Vertex b, Vertex c)
+	Triangle(const Vertex& a, const Vertex& b, const Vertex& c, uint32_t materialIndex)
+		: v0(a), v1(b), v2(c), materialIndex(materialIndex)
 	{
-		v0 = a;
-		v1 = b;
-		v2 = c;
 		this->faceNormal = Normalize(Cross(v1.position - v0.position, v2.position - v0.position));
 	}
 
@@ -345,6 +345,7 @@ struct Triangle
 		info.t = t;
 		info.point = p;
 		info.normal = faceNormal;
+		info.materialIndex = materialIndex;
 
 		return info;
 	}
