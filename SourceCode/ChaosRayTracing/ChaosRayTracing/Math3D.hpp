@@ -359,17 +359,19 @@ struct Triangle
 		Vector3 C1 = p - b;
 		Vector3 C2 = p - c;
 
-		if (Dot(faceNormal, Cross(edge0, C0)) < 0.f)
-			return info;
-		if (Dot(faceNormal, Cross(edge1, C1)) < 0.f)
-			return info;
-		if (Dot(faceNormal, Cross(edge2, C2)) < 0.f)
+		Vector3 cross0 = Cross(edge0, C0);
+		Vector3 cross1 = Cross(edge1, C1);
+		Vector3 cross2 = Cross(edge2, C2);
+
+		if (Dot(faceNormal, cross0) < 0.f ||
+			Dot(faceNormal, cross1) < 0.f ||
+			Dot(faceNormal, cross2) < 0.f)
 			return info;
 
 		// Calculate the barycentric coordinates
-		float triArea = Magnitude(Cross(b - a, c - a)); // Area of the whole triangle
-		info.barycentrics.x = Magnitude(Cross(p - a, c - a)) / triArea;
-		info.barycentrics.y = Magnitude(Cross(b - a, p - a)) / triArea;
+		float triArea = Magnitude(Cross(edge0, c - a)); // Area of the whole triangle
+		info.barycentrics.x = Magnitude(cross1) / triArea;
+		info.barycentrics.y = Magnitude(cross2) / triArea;
 
 		info.hit = true;
 		info.t = t;
