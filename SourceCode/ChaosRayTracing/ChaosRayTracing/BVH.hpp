@@ -179,7 +179,43 @@ private:
 			case SplitHuristic::SAH:
 			default:
 				{
-					
+					if(range.count() == 2)
+					{
+						mid = (range.start + range.end) / 2;
+						std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
+							{
+								return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
+							});
+					}
+					else
+					{
+						float minCost = std::numeric_limits<float>::max();
+						float boundingBoxArea = boundingBox.area();
+						for(uint8_t axis = 0; axis < 3; axis++)
+						{
+							std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [axis](const Triangle& triA, const Triangle& triB)
+								{
+									return triA.Centroid()[axis] < triB.Centroid()[axis];
+								});
+							for(uint32_t index = range.start; index < range.end; index++)
+							{
+								AABB left = AABB(triangles, Range(range.start, index));
+								AABB right = AABB(triangles, Range{ index, range.end });
+								float cost = ((index - range.start) * left.area() + (range.end - index) * right.area()) / boundingBoxArea;
+								if(cost < minCost)
+								{
+									minCost = cost;
+									splitAxis = axis;
+									mid = index;
+								}
+							}
+						}
+
+						std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
+							{
+								return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
+							});
+					}
 				}
 				break;
 			}
@@ -201,6 +237,6 @@ private:
 	std::vector<BVHNode> nodes;
 	static constexpr uint32_t maxDepth = 10;
 	static constexpr uint32_t maxTriangleCountPerLeaf = 4;
-	static constexpr SplitHuristic splitHeuristic = SplitHuristic::Middle;
+	static constexpr SplitHuristic splitHeuristic = SplitHuristic::SAH;
 
 };
