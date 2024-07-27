@@ -77,7 +77,7 @@ public:
 		return *this;
 	}
 
-	bool overlaps(AABB b)
+	bool overlaps(AABB b) const
 	{
 		b.intersection(*this);
 		return b.isValid() && b.volume() > 0.f;

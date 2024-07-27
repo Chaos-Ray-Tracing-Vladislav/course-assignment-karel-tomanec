@@ -282,6 +282,11 @@ struct Triangle
 		this->faceNormal = Normalize(Cross(v1.position - v0.position, v2.position - v0.position));
 	}
 
+	Vector3 Centroid() const
+	{
+		return (v0.position + v1.position + v2.position) / 3.f;
+	}
+
 	float Area() const
 	{
 		return Cross(v1.position - v0.position, v2.position - v0.position).Magnitude() * 0.5f;
