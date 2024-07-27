@@ -26,7 +26,9 @@ struct RGB
 
 	std::string ToString() const
 	{
-		return std::to_string(r) + " " + std::to_string(g) + " " + std::to_string(b);
+		char buffer[12];
+		std::snprintf(buffer, sizeof(buffer), "%u %u %u", r, g, b);
+		return { buffer };
 	}
 };
 
