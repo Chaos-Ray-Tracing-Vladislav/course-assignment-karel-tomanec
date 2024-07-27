@@ -87,23 +87,24 @@ public:
 		if (nodes.empty())
 			return hitInfo;
 
+		const bool dirIsNegative[3] = { ray.directionN.x < 0.f, ray.directionN.y < 0.f, ray.directionN.z < 0.f };
 
-		bool dirIsNegative[3] = { ray.directionN.x < 0.f, ray.directionN.y < 0.f, ray.directionN.z < 0.f };
+		// Fixed-size stack to avoid dynamic memory allocation
+		constexpr size_t maxStackDepth = 32;
+		uint32_t nodesToTraverse[maxStackDepth];
+		int32_t stackIndex = 0;
 
-		// Traversal
-		std::vector<uint32_t> nodesToTraverse;
-		nodesToTraverse.reserve(16);
 		// Insert root node index
-		nodesToTraverse.push_back(0);
+		nodesToTraverse[stackIndex++] = 0;
+
 		// Traverse the tree
-		while(!nodesToTraverse.empty())
+		while (stackIndex > 0)
 		{
-			const uint32_t nodeIndex = nodesToTraverse.back();
-			nodesToTraverse.pop_back();
+			const uint32_t nodeIndex = nodesToTraverse[--stackIndex];
 			const BVHNode& node = nodes[nodeIndex];
-			if(node.boundingBox.intersect(ray))
+			if (node.boundingBox.intersect(ray))
 			{
-				if(node.isLeaf())
+				if (node.primitiveCount > 0)
 				{
 					uint32_t trianglesOffset = node.primitivesOffset;
 					uint32_t trianglesCount = node.primitiveCount;
@@ -112,16 +113,12 @@ public:
 				}
 				else
 				{
-					if(dirIsNegative[node.splitAxis])
-					{
-						nodesToTraverse.push_back(nodeIndex + 1);
-						nodesToTraverse.push_back(node.secondChildOffset);
-					}
-					else
-					{
-						nodesToTraverse.push_back(node.secondChildOffset);
-						nodesToTraverse.push_back(nodeIndex + 1);
-					}
+					uint32_t firstChild = nodeIndex + 1;
+					uint32_t secondChild = node.secondChildOffset;
+					if (dirIsNegative[node.splitAxis])
+						std::swap(firstChild, secondChild);
+					nodesToTraverse[stackIndex++] = firstChild;
+					nodesToTraverse[stackIndex++] = secondChild;
 				}
 			}
 		}
