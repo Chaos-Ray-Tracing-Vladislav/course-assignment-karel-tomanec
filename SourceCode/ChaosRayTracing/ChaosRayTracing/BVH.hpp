@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <mutex>
 #include <stack>
 #include <vector>
 
@@ -20,7 +21,6 @@ struct BVHNode
 		return primitiveCount != 0;
 	}
 };
-
 
 class BVH 
 {
@@ -86,14 +86,15 @@ public:
 			return hitInfo;
 
 		// Traversal
-		std::stack<uint32_t> nodesToTraverse;
+		std::vector<uint32_t> nodesToTraverse;
+		nodesToTraverse.reserve(16);
 		// Insert root node index
-		nodesToTraverse.emplace(0);
+		nodesToTraverse.push_back(0);
 		// Traverse the tree
 		while(!nodesToTraverse.empty())
 		{
-			const uint32_t nodeIndex = nodesToTraverse.top();
-			nodesToTraverse.pop();
+			const uint32_t nodeIndex = nodesToTraverse.back();
+			nodesToTraverse.pop_back();
 			const BVHNode& node = nodes[nodeIndex];
 			if(node.boundingBox.intersect(ray))
 			{
@@ -107,8 +108,8 @@ public:
 				else
 				{
 					// TODO: decide the order
-					nodesToTraverse.emplace(nodeIndex + 1);
-					nodesToTraverse.emplace(node.secondChildOffset);
+					nodesToTraverse.push_back(nodeIndex + 1);
+					nodesToTraverse.push_back(node.secondChildOffset);
 				}
 			}
 		}
