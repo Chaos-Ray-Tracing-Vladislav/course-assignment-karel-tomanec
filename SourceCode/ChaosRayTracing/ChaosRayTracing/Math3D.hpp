@@ -69,9 +69,16 @@ inline Vector2 operator /(const Vector2& v, float s)
 
 struct Vector3
 {
-	float x;
-	float y;
-	float z;
+	union
+	{
+		struct
+		{
+			float x;
+			float y;
+			float z;
+		};
+		float data[3];
+	};
 
 	Vector3() = default;
 

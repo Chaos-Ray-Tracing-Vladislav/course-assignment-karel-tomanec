@@ -87,7 +87,7 @@ public:
 
 protected:
 
-    void WriteToFile(const Image& image, const Scene::Settings& sceneSettings)
+    static void WriteToFile(const Image& image, const Scene::Settings& sceneSettings)
     {
         const auto imageWidth = image.GetWidth();
         const auto imageHeight = image.GetHeight();
@@ -204,9 +204,7 @@ protected:
         Vector3 direction = Normalize(forward + right * x + up * y);
 
         Ray ray{ origin, direction };
-        const uint32_t maxTraceDepth = 2;
 
-        Vector3 throughput{ 1.f };
         Vector3 L = TraceRay(ray);
         return L.ToRGB();
     }

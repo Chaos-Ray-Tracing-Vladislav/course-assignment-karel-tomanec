@@ -1,0 +1,12 @@
+Testbed:
+
+CPU:
+MaxClockSpeed  Name                                   NumberOfCores  NumberOfLogicalProcessors
+4201           AMD Ryzen 9 7950X3D 16-Core Processor  16             32
+
+Before:
+
+
+After:
+scene0.crtscene rendering time: 0.260891 seconds
+scene1.crtscene rendering time: 0.328682 seconds
