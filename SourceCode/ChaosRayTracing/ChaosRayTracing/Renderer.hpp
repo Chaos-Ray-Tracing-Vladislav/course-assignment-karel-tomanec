@@ -1,11 +1,9 @@
 #pragma once
 
-#include "Math3D.hpp"
 #include "PPMWriter.hpp"
 #include "Scene.hpp"
+
 #include <thread>
-#include <mutex>
-#include <barrier>
 #include <utility>
 #include "ThreadPool.hpp"
 

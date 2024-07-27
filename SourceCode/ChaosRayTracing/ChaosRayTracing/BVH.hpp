@@ -3,7 +3,6 @@
 #include <stack>
 #include <vector>
 
-#include "Math3D.hpp"
 #include "AABB.hpp"
 #include "Material.hpp"
 

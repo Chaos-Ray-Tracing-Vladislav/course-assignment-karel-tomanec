@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "Math3D.hpp"
-#include "Textures.hpp"
 
+class Texture;
 
 class Material
 {
@@ -27,13 +27,7 @@ public:
 		this->albedo = albedo;
 	}
 
-	Vector3 GetAlbedo(const Vector2& barycentrics, const Vector2& uv) const
-	{
-		if (texture)
-			return texture->GetColor(barycentrics, uv);
-
-		return albedo;
-	}
+	Vector3 GetAlbedo(const Vector2& barycentrics, const Vector2& uv) const;
 
 private:
 

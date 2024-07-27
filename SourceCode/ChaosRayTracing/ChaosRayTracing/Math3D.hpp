@@ -253,7 +253,7 @@ inline Vector3 operator -(const Point3& a, const Point3& b)
 	return Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-Vector3 OffsetRayOrigin(const Vector3& origin, const Vector3& normal)
+inline Vector3 OffsetRayOrigin(const Vector3& origin, const Vector3& normal)
 {
 	constexpr float rayOffset = 0.001f;
 	return origin + normal * rayOffset;
@@ -464,21 +464,21 @@ static Matrix4 MakeRotationZ(float t)
 		0.f, 0.f, 0.f, 1.f);
 }
 
-Vector3 operator *(const Matrix4& H, const Vector3& v)
+inline Vector3 operator *(const Matrix4& H, const Vector3& v)
 {
 	return Vector3(H(0,0) * v.x + H(0,1) * v.y + H(0,2) * v.z,
 		H(1,0) * v.x + H(1,1) * v.y + H(1,2) * v.z,
 		H(2,0) * v.x + H(2,1) * v.y + H(2,2) * v.z);
 }
 
-Point3 operator *(const Matrix4& H, const Point3& p)
+inline Point3 operator *(const Matrix4& H, const Point3& p)
 {
 	return Point3(H(0,0) * p.x + H(0,1) * p.y + H(0,2) * p.z + H(0,3),
 		H(1,0) * p.x + H(1,1) * p.y + H(1,2) * p.z + H(1,3),
 		H(2,0) * p.x + H(2,1) * p.y + H(2,2) * p.z + H(2,3));
 }
 
-Matrix4 operator*(const Matrix4& A, const Matrix4& B)
+inline Matrix4 operator*(const Matrix4& A, const Matrix4& B)
 {
 	Matrix4 result;
 	for (int i = 0; i < 4; ++i)
