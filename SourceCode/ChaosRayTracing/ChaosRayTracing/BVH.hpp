@@ -27,6 +27,13 @@ class BVH
 {
 public:
 
+	enum class SplitHuristic
+	{
+		Equal,
+		Middle,
+		SAH
+	};
+
 	BVH() = default;
 
 	BVH(std::vector<Triangle>& triangles)
@@ -146,10 +153,38 @@ private:
 			uint32_t mid = (range.start + range.end) / 2;
 			Vector3 extent = boundingBox.extent();    // Find the axis with the largest extent
 			uint8_t splitAxis = static_cast<uint8_t>(std::distance(std::begin(extent.data), std::max_element(std::begin(extent.data), std::end(extent.data))));
-			std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
+
+			switch(splitHeuristic)
+			{
+			case SplitHuristic::Middle:
 				{
-					return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
-				});
+					float midVal = (boundingBox.minPoint[splitAxis] + boundingBox.maxPoint[splitAxis]) * 0.5f;
+					auto midIt = std::partition(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis, midVal](const Triangle& tri)
+						{
+							return tri.Centroid()[splitAxis] < midVal;
+						});
+					mid = std::distance(triangles.begin(), midIt);
+					if (midIt != triangles.begin() + range.start && midIt != triangles.begin() + range.end)
+						break;
+				}
+			case SplitHuristic::Equal:
+				{
+					mid = (range.start + range.end) / 2;
+					std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
+						{
+							return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
+						});
+				}
+				break;
+			case SplitHuristic::SAH:
+			default:
+				{
+					
+				}
+				break;
+			}
+
+
 			BVHNode interiorNode{
 				.boundingBox = boundingBox,
 				.primitiveCount = 0,
@@ -166,4 +201,6 @@ private:
 	std::vector<BVHNode> nodes;
 	static constexpr uint32_t maxDepth = 10;
 	static constexpr uint32_t maxTriangleCountPerLeaf = 4;
+	static constexpr SplitHuristic splitHeuristic = SplitHuristic::Middle;
+
 };
