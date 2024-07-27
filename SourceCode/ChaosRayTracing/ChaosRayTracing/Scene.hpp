@@ -35,7 +35,7 @@ public:
 	{
 		uint32_t width;
 		uint32_t height;
-		uint32_t bucketSize;
+		uint32_t bucketSize = 24;
 	};
 	struct Settings
 	{
@@ -49,7 +49,9 @@ public:
 	{
 		SceneParser sceneParser(*this);
 		sceneParser.parseSceneFile(fileName);
+		std::cout << fileName << " parsed.\n";
 		bvh = BVH(triangles);
+		std::cout << fileName << " BVH built.\n";
 	}
 
 	HitInfo ClosestHit(Ray& ray) const
