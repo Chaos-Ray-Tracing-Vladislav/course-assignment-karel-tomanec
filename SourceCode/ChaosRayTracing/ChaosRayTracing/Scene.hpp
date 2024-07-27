@@ -52,12 +52,12 @@ public:
 		bvh = BVH(triangles);
 	}
 
-	HitInfo ClosestHit(const Ray& ray) const
+	HitInfo ClosestHit(Ray& ray) const
 	{
 		return bvh.closestHit(triangles, ray);
 	}
 
-	bool AnyHit(const Ray& ray) const
+	bool AnyHit(Ray& ray) const
 	{
 		return bvh.anyHit(triangles, materials, ray);
 	}

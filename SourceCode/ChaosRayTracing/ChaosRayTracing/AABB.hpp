@@ -86,16 +86,18 @@ public:
 	AABB& operator|=(const AABB& rhs) { return include(rhs); }
 
 	bool intersect(const Ray& ray) const {
-		float t1 = (minPoint.x - ray.origin.x) / ray.directionN.x;
-		float t2 = (maxPoint.x - ray.origin.x) / ray.directionN.x;
-		float t3 = (minPoint.y - ray.origin.y) / ray.directionN.y;
-		float t4 = (maxPoint.y - ray.origin.y) / ray.directionN.y;
-		float t5 = (minPoint.z - ray.origin.z) / ray.directionN.z;
-		float t6 = (maxPoint.z - ray.origin.z) / ray.directionN.z;
+		float minT = 0.f;
+		float maxT = ray.maxT;
 
-		float tmin = std::max({std::min(t1, t2), std::min(t3, t4), std::min(t5, t6)});
-		float tmax = std::min({std::max(t1, t2), std::max(t3, t4), std::max(t5, t6)});
+		for (uint8_t d = 0; d < 3; ++d) 
+		{
+			float t1 = (minPoint[d] - ray.origin[d]) * ray.directionNInv[d];
+			float t2 = (maxPoint[d] - ray.origin[d]) * ray.directionNInv[d];
 
-		return tmax >= tmin && tmax >= 0;
+			minT = std::max(minT, std::min(t1, t2));
+			maxT = std::min(maxT, std::max(t1, t2));
+		}
+
+		return minT < maxT;
 	}
 };

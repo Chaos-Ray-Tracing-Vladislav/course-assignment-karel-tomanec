@@ -15,6 +15,7 @@ struct BVHNode
 		uint32_t secondChildOffset; // interior
 	};
 	uint16_t primitiveCount; // 0 -> interior node
+	uint8_t splitAxis;
 
 	bool isLeaf() const
 	{
@@ -34,7 +35,7 @@ public:
 		build(triangles, range, 0);
 	}
 
-	HitInfo closestHit(const std::vector<Triangle>& triangles, const Ray& ray) const
+	HitInfo closestHit(const std::vector<Triangle>& triangles, Ray& ray) const
 	{
 		std::function closestHitFunc = [&triangles, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
 			{
@@ -47,6 +48,7 @@ public:
 					{
 						currHitInfo.triangleIndex = triangleIndex;
 						hitInfo = currHitInfo;
+						ray.maxT = hitInfo.t;
 					}
 				}
 				return false;
@@ -54,7 +56,7 @@ public:
 		return traverse(ray, closestHitFunc);
 	}
 
-	bool anyHit(const std::vector<Triangle>& triangles, const std::vector<Material>& materials, const Ray& ray) const
+	bool anyHit(const std::vector<Triangle>& triangles, const std::vector<Material>& materials, Ray& ray) const
 	{
 		std::function anyHitFunc = [&triangles, &materials, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
 			{
@@ -79,11 +81,14 @@ public:
 		return hitInfo.hit;
 	}
 
-	HitInfo traverse(const Ray& ray, std::function<bool(HitInfo&, uint32_t, uint32_t)> hitFunction) const
+	HitInfo traverse(Ray& ray, const std::function<bool(HitInfo&, uint32_t, uint32_t)>& hitFunction) const
 	{
 		HitInfo hitInfo;
 		if (nodes.empty())
 			return hitInfo;
+
+
+		bool dirIsNegative[3] = { ray.directionN.x < 0.f, ray.directionN.y < 0.f, ray.directionN.z < 0.f };
 
 		// Traversal
 		std::vector<uint32_t> nodesToTraverse;
@@ -107,9 +112,16 @@ public:
 				}
 				else
 				{
-					// TODO: decide the order
-					nodesToTraverse.push_back(nodeIndex + 1);
-					nodesToTraverse.push_back(node.secondChildOffset);
+					if(dirIsNegative[node.splitAxis])
+					{
+						nodesToTraverse.push_back(nodeIndex + 1);
+						nodesToTraverse.push_back(node.secondChildOffset);
+					}
+					else
+					{
+						nodesToTraverse.push_back(node.secondChildOffset);
+						nodesToTraverse.push_back(nodeIndex + 1);
+					}
 				}
 			}
 		}
@@ -136,14 +148,15 @@ private:
 		{
 			uint32_t mid = (range.start + range.end) / 2;
 			Vector3 extent = boundingBox.extent();    // Find the axis with the largest extent
-			uint32_t splitAxis = static_cast<uint32_t>(std::distance(std::begin(extent.data), std::max_element(std::begin(extent.data), std::end(extent.data))));
+			uint8_t splitAxis = static_cast<uint8_t>(std::distance(std::begin(extent.data), std::max_element(std::begin(extent.data), std::end(extent.data))));
 			std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
 				{
 					return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
 				});
 			BVHNode interiorNode{
 				.boundingBox = boundingBox,
-				.primitiveCount = 0
+				.primitiveCount = 0,
+				.splitAxis = splitAxis
 			};
 			uint32_t interiorNodeIndex = static_cast<uint32_t>(nodes.size());
 			nodes.emplace_back(interiorNode);

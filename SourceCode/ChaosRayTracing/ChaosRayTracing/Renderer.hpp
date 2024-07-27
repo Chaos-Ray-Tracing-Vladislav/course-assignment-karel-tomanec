@@ -110,7 +110,7 @@ protected:
         writer << buffer.str();
     }
 
-    Vector3 TraceRay(const Ray& ray, uint32_t depth = 0)
+    Vector3 TraceRay(Ray& ray, uint32_t depth = 0)
     {
         Vector3 L{ 0.f };
         if (depth > maxDepth)

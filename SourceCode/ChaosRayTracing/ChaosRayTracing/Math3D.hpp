@@ -5,6 +5,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <iso646.h>
 #include <stdexcept>
 
 constexpr float DegToRad(float degrees)
@@ -262,7 +263,14 @@ struct Ray
 {
 	Vector3 origin;
 	Vector3 directionN;
-	float maxT = std::numeric_limits<float>::max();
+	Vector3 directionNInv;
+	float maxT;
+
+	Ray(const Vector3& origin, const Vector3& directionN, float maxT = std::numeric_limits<float>::max())
+		: origin(origin), directionN(directionN), maxT(maxT)
+	{
+		directionNInv = Vector3(1.f / directionN.x, 1.f / directionN.y, 1.f / directionN.z);
+	}
 
 	Vector3 operator()(float t) const
 	{
