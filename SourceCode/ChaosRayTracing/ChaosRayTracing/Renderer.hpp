@@ -95,18 +95,24 @@ protected:
         const auto imageHeight = image.GetHeight();
         PPMWriter writer(sceneSettings.sceneName + "_render", imageWidth, imageHeight, maxColorComponent);
 
-        std::stringstream buffer;
-        buffer.str().reserve(imageWidth * imageHeight * 12);
+        // Reserve enough space in the stringstream buffer
+        std::ostringstream buffer;
+        buffer.str().reserve(imageWidth * imageHeight * 12);  // Reserve enough space for the entire image
+
+        // Use a single string to accumulate the pixel values
+        std::string pixelData;
+        pixelData.reserve(imageWidth * imageHeight * 12);  // Reserve enough space for the entire image
 
         for (uint32_t rowIdx = 0; rowIdx < imageHeight; ++rowIdx)
         {
             for (uint32_t colIdx = 0; colIdx < imageWidth; ++colIdx)
             {
-                buffer << image.GetPixel(colIdx, rowIdx).ToString() << "\t";
+                pixelData.append(image.GetPixel(colIdx, rowIdx).ToString()).append("\t");
             }
-            buffer << "\n";
+            pixelData.append("\n");
         }
 
+        buffer << pixelData;
         writer << buffer.str();
     }
 
