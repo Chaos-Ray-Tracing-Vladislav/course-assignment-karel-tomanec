@@ -9,5 +9,5 @@ scene0.crtscene rendering time: 0.261045 seconds
 scene1.crtscene rendering time: 6.01604 seconds
 
 After:
-scene0.crtscene rendering time: 0.237687 seconds
-scene1.crtscene rendering time: 0.320177 seconds
+scene0.crtscene rendering time: 0.222508 seconds
+scene1.crtscene rendering time: 0.285412 seconds
