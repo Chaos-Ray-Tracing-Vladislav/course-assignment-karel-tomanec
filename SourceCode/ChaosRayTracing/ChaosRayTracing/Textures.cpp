@@ -31,8 +31,8 @@ Vector3 BitmapTexture::GetColor(const Vector2& barycentrics, const Vector2& uv) 
 { 
 	assert(image);
 
-	int x = uv.x * width;
-	int y = (1.f - uv.y) * height;
+	int x = static_cast<int>(uv.x * width);
+	int y = static_cast<int>((1.f - uv.y) * height);
 
 	unsigned char *pixel = image + (y * width + x) * channels;
 
