@@ -197,7 +197,7 @@ private:
 								{
 									return triA.Centroid()[axis] < triB.Centroid()[axis];
 								});
-							for(uint32_t index = range.start; index < range.end; index++)
+							for(uint32_t index = range.start + 1; index < range.end; index++)
 							{
 								AABB left = AABB(triangles, Range(range.start, index));
 								AABB right = AABB(triangles, Range{ index, range.end });
