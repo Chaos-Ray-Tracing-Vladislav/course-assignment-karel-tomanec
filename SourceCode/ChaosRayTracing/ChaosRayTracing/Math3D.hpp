@@ -5,6 +5,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <stdexcept>
 
 constexpr float DegToRad(float degrees)
 {
@@ -77,6 +78,28 @@ struct Vector3
 	Vector3(float v) : x(v), y(v), z(v) {}
 
 	Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+
+	// Overload the [] operator for non-const access
+	float& operator[](size_t index) {
+		if (index == 0) 
+			return x;
+		if (index == 1) 
+			return y;
+		if (index == 2) 
+			return z;
+		throw std::out_of_range("Index out of range");
+	}
+
+	// Overload the [] operator for const access
+	const float& operator[](size_t index) const {
+		if (index == 0) 
+			return x;
+		if (index == 1) 
+			return y;
+		if (index == 2) 
+			return z;
+		throw std::out_of_range("Index out of range");
+	}
 
 	Vector3 operator -() const
 	{

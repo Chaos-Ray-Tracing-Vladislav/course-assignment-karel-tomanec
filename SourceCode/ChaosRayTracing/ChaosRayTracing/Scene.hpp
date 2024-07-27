@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+
+#include "BVH.hpp"
 #include "Textures.hpp"
 
 // Helper functions
@@ -156,22 +158,24 @@ public:
 	Scene(const std::string& fileName)
 	{
 		parseSceneFile(fileName);
+		bvh = BVH(triangles);
 	}
 
 	HitInfo ClosestHit(const Ray& ray) const
 	{
-		HitInfo hitInfo;
-		for (uint32_t triangleIndex = 0; triangleIndex < triangles.size(); ++triangleIndex)
-		{
-			const auto& triangle = triangles[triangleIndex];
-			HitInfo currHitInfo = triangle.Intersect(ray);
-			if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
-			{
-				currHitInfo.triangleIndex = triangleIndex;
-				hitInfo = currHitInfo;
-			}
-		}
-		return hitInfo;
+		return bvh.closestHit(triangles, ray);
+		//HitInfo hitInfo;
+		//for (uint32_t triangleIndex = 0; triangleIndex < triangles.size(); ++triangleIndex)
+		//{
+		//	const auto& triangle = triangles[triangleIndex];
+		//	HitInfo currHitInfo = triangle.Intersect(ray);
+		//	if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
+		//	{
+		//		currHitInfo.triangleIndex = triangleIndex;
+		//		hitInfo = currHitInfo;
+		//	}
+		//}
+		//return hitInfo;
 	}
 
 	bool AnyHit(const Ray& ray) const
@@ -195,6 +199,7 @@ public:
 	std::vector<Material> materials;
 	std::map<std::string, std::shared_ptr<const Texture>> textures;
 	std::vector<Light> lights;
+	BVH bvh;
 	Settings settings;
 
 protected:
