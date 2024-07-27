@@ -95,25 +95,42 @@ protected:
         const auto imageHeight = image.GetHeight();
         PPMWriter writer(sceneSettings.sceneName + "_render", imageWidth, imageHeight, maxColorComponent);
 
-        // Reserve enough space in the stringstream buffer
-        std::ostringstream buffer;
-        buffer.str().reserve(imageWidth * imageHeight * 12);  // Reserve enough space for the entire image
+        // Reserve enough space in the string buffer
+        std::string buffer;
+        buffer.reserve(imageWidth * imageHeight * 12);
 
-        // Use a single string to accumulate the pixel values
-        std::string pixelData;
-        pixelData.reserve(imageWidth * imageHeight * 12);  // Reserve enough space for the entire image
+        const unsigned int numThreads = std::thread::hardware_concurrency();
+        const unsigned int rowsPerThread = imageHeight / numThreads;
 
-        for (uint32_t rowIdx = 0; rowIdx < imageHeight; ++rowIdx)
-        {
-            for (uint32_t colIdx = 0; colIdx < imageWidth; ++colIdx)
+        std::vector<std::string> threadBuffers(numThreads);
+        std::vector<std::thread> threads;
+
+        auto processRows = [&](unsigned int startRow, unsigned int endRow, std::string& localBuffer) {
+            localBuffer.reserve((endRow - startRow) * imageWidth * 12);
+            for (uint32_t rowIdx = startRow; rowIdx < endRow; ++rowIdx) 
             {
-                pixelData.append(image.GetPixel(colIdx, rowIdx).ToString()).append("\t");
+                for (uint32_t colIdx = 0; colIdx < imageWidth; ++colIdx) 
+                {
+                    localBuffer.append(image.GetPixel(colIdx, rowIdx).ToString()).append("\t");
+                }
+                localBuffer.append("\n");
             }
-            pixelData.append("\n");
+            };
+
+        for (unsigned int i = 0; i < numThreads; ++i) 
+        {
+            unsigned int startRow = i * rowsPerThread;
+            unsigned int endRow = (i == numThreads - 1) ? imageHeight : startRow + rowsPerThread;
+            threads.emplace_back(processRows, startRow, endRow, std::ref(threadBuffers[i]));
         }
 
-        buffer << pixelData;
-        writer << buffer.str();
+        for (auto& thread : threads)
+            thread.join();
+
+        for (const auto& localBuffer : threadBuffers)
+            buffer.append(localBuffer);
+
+        writer << buffer;
     }
 
     Vector3 TraceRay(Ray& ray, uint32_t depth = 0)
