@@ -168,5 +168,5 @@ private:
 
 	std::vector<BVHNode> nodes;
 	static constexpr uint32_t maxDepth = 10;
-	static constexpr uint32_t maxTriangleCountPerLeaf = 10;
+	static constexpr uint32_t maxTriangleCountPerLeaf = 4;
 };
