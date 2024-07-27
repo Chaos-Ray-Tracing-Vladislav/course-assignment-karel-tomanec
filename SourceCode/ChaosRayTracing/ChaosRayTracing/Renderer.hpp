@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sstream>
+
 #include "PPMWriter.hpp"
 #include "Scene.hpp"
 
@@ -93,14 +95,19 @@ protected:
         const auto imageHeight = image.GetHeight();
         PPMWriter writer(sceneSettings.sceneName + "_render", imageWidth, imageHeight, maxColorComponent);
 
+        std::stringstream buffer;
+        buffer.str().reserve(imageWidth * imageHeight * 12);
+
         for (uint32_t rowIdx = 0; rowIdx < imageHeight; ++rowIdx)
         {
             for (uint32_t colIdx = 0; colIdx < imageWidth; ++colIdx)
             {
-                writer << image.GetPixel(colIdx, rowIdx).ToString() << "\t";
+                buffer << image.GetPixel(colIdx, rowIdx).ToString() << "\t";
             }
-            writer << "\n";
+            buffer << "\n";
         }
+
+        writer << buffer.str();
     }
 
     Vector3 TraceRay(const Ray& ray, uint32_t depth = 0)
