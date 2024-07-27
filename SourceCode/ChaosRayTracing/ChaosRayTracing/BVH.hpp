@@ -144,10 +144,10 @@ private:
 				.boundingBox = boundingBox,
 				.primitiveCount = 0
 			};
-			uint32_t interiorNodeIndex = nodes.size();
+			uint32_t interiorNodeIndex = static_cast<uint32_t>(nodes.size());
 			nodes.emplace_back(interiorNode);
 			build(triangles, Range{ range.start, mid }, depth + 1);
-			nodes[interiorNodeIndex].secondChildOffset = nodes.size();
+			nodes[interiorNodeIndex].secondChildOffset = static_cast<uint32_t>(nodes.size());
 			build(triangles, Range{ mid, range.end }, depth + 1);
 		}
 	}

@@ -176,7 +176,7 @@ protected:
                     Ray reflectionRay{ offsetOriginReflection,  reflectionDir };
                     Vector3 reflectionL = TraceRay(reflectionRay, depth + 1);
 
-                    float fresnel = 0.5f * std::pow(1.f + Dot(ray.directionN, normal), 5);
+                    float fresnel = 0.5f * std::powf(1.f + Dot(ray.directionN, normal), 5);
 
                     L += fresnel * reflectionL + (1.f - fresnel) * refractionL;
 

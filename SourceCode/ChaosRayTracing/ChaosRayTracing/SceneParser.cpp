@@ -1,7 +1,6 @@
 #include "SceneParser.hpp"
 
 #include <fstream>
-
 #include <iostream>
 #include <map>
 #include <vector>
@@ -41,11 +40,9 @@ inline std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr
 	result.reserve(arr.Size() / 3);
 	for(uint32_t i = 0; i < arr.Size(); i += 3) {
 		result.emplace_back(
-			Vector3(
-				static_cast<float>(arr[i].GetDouble()), 
+			static_cast<float>(arr[i].GetDouble()), 
 				static_cast<float>(arr[i+1].GetDouble()), 
 				static_cast<float>(arr[i+2].GetDouble())
-			)
 		);
 	}
 	return result;
@@ -58,10 +55,8 @@ inline std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr)
 	result.reserve(arr.Size() / 3);
 	for(uint32_t i = 0; i < arr.Size(); i += 3) {
 		result.emplace_back(
-			Vector2(
-				static_cast<float>(arr[i].GetDouble()), 
+			static_cast<float>(arr[i].GetDouble()), 
 				static_cast<float>(arr[i+1].GetDouble())
-			)
 		);
 	}
 	return result;
@@ -76,8 +71,6 @@ inline std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr
 		result.emplace_back(arr[i].GetInt());
 	return result;
 }
-
-
 
 rapidjson::Document SceneParser::getJsonDocument(const std::string& fileName)
 {
@@ -101,8 +94,7 @@ rapidjson::Document SceneParser::getJsonDocument(const std::string& fileName)
 	return doc;	// RVO
 }
 
-
-void SceneParser::parseSceneFile(const std::string& fileName)
+void SceneParser::parseSceneFile(const std::string& fileName) const
 {
 	using namespace rapidjson;
 	Document doc = getJsonDocument(fileName);
@@ -203,8 +195,8 @@ void SceneParser::parseSceneFile(const std::string& fileName)
 				vertexNormals[i2] += faceNormal;
 			}
 			// Normalize
-			for (uint32_t i = 0; i < vertexNormals.size(); ++i)
-				vertexNormals[i] = Normalize(vertexNormals[i]);
+			for (auto& vertexNormal : vertexNormals)
+				vertexNormal = Normalize(vertexNormal);
 
 			// Get material index
 			const Value& materialIndexValue = it->FindMember(kMaterialIndexStr.c_str())->value;
@@ -258,7 +250,7 @@ void SceneParser::parseSceneFile(const std::string& fileName)
 				const Value& albedoValue = it->FindMember(kTexturesAlbedoStr.c_str())->value;
 				assert(!albedoValue.IsNull() && albedoValue.IsArray());
 				Vector3 albedo = loadVector(albedoValue.GetArray());
-				scene.textures.emplace(name, std::make_shared<const AlbedoTexture>(name, std::move(albedo)));
+				scene.textures.emplace(name, std::make_shared<const AlbedoTexture>(name, albedo));
 			}
 			else if (type == "edges")
 			{
@@ -274,7 +266,7 @@ void SceneParser::parseSceneFile(const std::string& fileName)
 				assert(!edgeWidthValue.IsNull() && edgeWidthValue.IsFloat());
 				float edgeWidth = edgeWidthValue.GetFloat();
 
-				scene.textures.emplace(name, std::make_shared<const EdgesTexture>(name, std::move(edgeColor), std::move(innerColor), edgeWidth));
+				scene.textures.emplace(name, std::make_shared<const EdgesTexture>(name, edgeColor, innerColor, edgeWidth));
 			}
 			else if (type == "checker")
 			{
@@ -290,7 +282,7 @@ void SceneParser::parseSceneFile(const std::string& fileName)
 				assert(!squareSizeValue.IsNull() && squareSizeValue.IsFloat());
 				float squareSize = squareSizeValue.GetFloat();
 
-				scene.textures.emplace(name, std::make_shared<const CheckerTexture>(name, std::move(colorA), std::move(colorB), squareSize));
+				scene.textures.emplace(name, std::make_shared<const CheckerTexture>(name, colorA, colorB, squareSize));
 			}
 			else if (type == "bitmap")
 			{

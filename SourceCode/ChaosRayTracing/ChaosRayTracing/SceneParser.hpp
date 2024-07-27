@@ -59,5 +59,5 @@ public:
 
 	SceneParser(Scene& scene) : scene(scene) {}
 
-	void parseSceneFile(const std::string& fileName);
+	void parseSceneFile(const std::string& fileName) const;
 };
