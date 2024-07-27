@@ -37,7 +37,7 @@ public:
 
 	HitInfo closestHit(const std::vector<Triangle>& triangles, Ray& ray) const
 	{
-		std::function closestHitFunc = [&triangles, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
+		const auto closestHitFunc = [&triangles, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
 			{
 				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
 				{
@@ -58,7 +58,7 @@ public:
 
 	bool anyHit(const std::vector<Triangle>& triangles, const std::vector<Material>& materials, Ray& ray) const
 	{
-		std::function anyHitFunc = [&triangles, &materials, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
+		const auto anyHitFunc = [&triangles, &materials, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
 			{
 				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
 				{
@@ -81,7 +81,8 @@ public:
 		return hitInfo.hit;
 	}
 
-	HitInfo traverse(Ray& ray, const std::function<bool(HitInfo&, uint32_t, uint32_t)>& hitFunction) const
+	template<typename Func>
+	HitInfo traverse(Ray& ray, Func&& hitFunction) const
 	{
 		HitInfo hitInfo;
 		if (nodes.empty())
