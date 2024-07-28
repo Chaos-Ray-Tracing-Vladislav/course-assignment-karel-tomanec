@@ -14,13 +14,15 @@ public:
 		CONSTANT,
 		DIFFUSE,
 		REFLECTIVE,
-		REFRACTIVE
+		REFRACTIVE,
+		EMISSIVE
 	};
 
 	Type type;
 	float ior;
 	bool smoothShading;
 	std::shared_ptr<const Texture> texture;
+	Vector3 emission{ 0.f };
 
 	void SetAlbedo(Vector3 albedo)
 	{

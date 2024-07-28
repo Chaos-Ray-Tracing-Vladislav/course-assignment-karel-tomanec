@@ -62,19 +62,34 @@ public:
                     {
                         for (uint32_t rowIdx = startRow; rowIdx < endRow; ++rowIdx)
                         {
-                            float y = static_cast<float>(rowIdx) + 0.5f; // To pixel center
-                            y /= imageHeight; // To NDC
-                            y = 1.f - (2.f * y); // To screen space
+
                             for (uint32_t colIdx = startColumn; colIdx < endColumn; ++colIdx)
                             {
-                                float x = static_cast<float>(colIdx) + 0.5f; // To pixel center
-                                x /= imageWidth; // To NDC
-                                x = 2.f * x - 1.f; // To screen space
-                                x *= static_cast<float>(imageWidth) / imageHeight; // Consider aspect ratio
 
-                                RGB color = GetPixel(x, y);
 
-                                image.SetPixel(colIdx, rowIdx, color);
+                                Vector3 color{ 0.f };
+
+                                std::random_device rd; // Seed
+                                std::mt19937 gen(rd()); // Mersenne Twister generator
+                                std::uniform_real_distribution<float> dis(-0.5f, 0.5f); // Uniform distribution between -0.5 and 0.5
+
+                                for(uint32_t sample = 0; sample < sampleCount; sample++)
+                                {
+                                    float y = static_cast<float>(rowIdx) + 0.5f + dis(gen); // To pixel center
+                                    y /= imageHeight; // To NDC
+                                    y = 1.f - (2.f * y); // To screen space
+
+                                    float x = static_cast<float>(colIdx) + 0.5f + dis(gen); // To pixel center
+                                    x /= imageWidth; // To NDC
+                                    x = 2.f * x - 1.f; // To screen space
+                                    x *= static_cast<float>(imageWidth) / imageHeight; // Consider aspect ratio
+
+                                	color += GetPixel(x, y);
+                                }
+
+                                color /= static_cast<float>(sampleCount);
+
+                                image.SetPixel(colIdx, rowIdx, color.ToRGB());
                             }
                         }
                     }));
@@ -164,8 +179,17 @@ protected:
                         L += material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics)) * std::max(0.f, Dot(normal, dirToLight)) * attenuation * light.intensity;
                     }
                 }
+
+                // Generate random direction
+                Vector3 randomDirection = RandomInHemisphere(hitInfo.normal);
+                Ray nextRay{ offsetOrigin, randomDirection };
+                L += material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics)) * TraceRay(nextRay, depth + 1);
             }
-            if (material.type == Material::Type::REFLECTIVE)
+            else if (material.type == Material::Type::EMISSIVE)
+            {
+                L += material.emission;
+            }
+            else if (material.type == Material::Type::REFLECTIVE)
             {
                 Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                 Ray reflectionRay{ offsetOrigin,  reflectionDir };
@@ -221,7 +245,7 @@ protected:
         return L;
     }
 
-    RGB GetPixel(float x, float y)
+    Vector3 GetPixel(float x, float y)
     {
         Vector3 origin = scene.camera.GetPosition();
         Vector3 forward = scene.camera.GetLookDirection();
@@ -236,9 +260,11 @@ protected:
         Ray ray{ origin, direction };
 
         Vector3 L = TraceRay(ray);
-        return L.ToRGB();
+        return L;
     }
-    static constexpr uint32_t maxDepth = 10;
+
+    static constexpr uint32_t maxDepth = 4;
     static constexpr uint32_t maxColorComponent = 255;
+    static constexpr uint32_t sampleCount = 16;
     Scene& scene;
 };

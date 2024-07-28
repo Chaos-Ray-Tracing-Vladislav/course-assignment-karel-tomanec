@@ -307,6 +307,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 		{ kTypeDiffuseStr, Material::Type::DIFFUSE},
 		{ kTypeReflectiveStr, Material::Type::REFLECTIVE},
 		{ kTypeRefractiveStr, Material::Type::REFRACTIVE},
+		{ kTypeEmissiveStr, Material::Type::EMISSIVE},
 	};
 
 	// Load materials
@@ -326,8 +327,15 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				const Value& iorVal = it->FindMember(kIorStr.c_str())->value;
 				assert(!iorVal.IsNull() && iorVal.IsFloat());
 				material.ior = iorVal.GetFloat();
-
-			} else {
+			}
+			else if (material.type == Material::Type::EMISSIVE)
+			{
+				const Value& emissionVal = it->FindMember(kEmissionStr.c_str())->value;
+				assert(!emissionVal.IsNull() && emissionVal.IsArray());
+				material.emission = loadVector(emissionVal.GetArray());
+			}
+			else 
+			{
 				const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
 				assert(!albedoVal.IsNull());
 				if (albedoVal.IsArray())

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iso646.h>
+#include <random>
 #include <stdexcept>
 
 constexpr float DegToRad(float degrees)
@@ -510,3 +511,26 @@ struct Range {
 
 	uint32_t count() const { return end - start; }
 };
+
+inline Vector3 RandomInHemisphere(const Vector3& normal) {
+	static thread_local std::default_random_engine generator;
+	static thread_local std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+
+	float u = distribution(generator);
+	float v = distribution(generator);
+
+	float theta = 2.0f * std::numbers::pi_v<float> * u;
+	float phi = acos(2.0f * v - 1.0f);
+	float x = sin(phi) * cos(theta);
+	float y = sin(phi) * sin(theta);
+	float z = cos(phi);
+
+	Vector3 randomDirection(x, y, z);
+
+	// Ensure it's in the same hemisphere as the normal
+	if (Dot(randomDirection, normal) < 0.0f) {
+		randomDirection = -randomDirection;
+	}
+
+	return randomDirection;
+}

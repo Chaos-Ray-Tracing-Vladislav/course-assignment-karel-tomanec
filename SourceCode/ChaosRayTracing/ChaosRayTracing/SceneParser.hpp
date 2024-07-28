@@ -34,7 +34,9 @@ private:
 	inline static const std::string kTypeDiffuseStr{ "diffuse" };
 	inline static const std::string kTypeReflectiveStr{ "reflective" };
 	inline static const std::string kTypeRefractiveStr{ "refractive" };
+	inline static const std::string kTypeEmissiveStr{ "emissive" };
 	inline static const std::string kAlbedoStr{ "albedo" };
+	inline static const std::string kEmissionStr{ "emission" };
 	inline static const std::string kIorStr{ "ior" };
 	inline static const std::string kSmoothShadingStr{ "smooth_shading" };
 	inline static const std::string kMaterialIndexStr{ "material_index" };
