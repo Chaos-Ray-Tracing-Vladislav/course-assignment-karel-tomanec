@@ -4,9 +4,9 @@
 			0, 0, 0
 		],		
 		"image_settings": {
-			"width": 540,
-			"height": 540,
-			"bucket_size": 20
+			"width": 1080,
+			"height": 1080,
+			"bucket_size": 24
 		}
 	},
 	
@@ -86,12 +86,11 @@
 		{
 			"type": "emissive",
 			"emission": [
-				25.0, 25.0, 25.0
+				0.01, 0.01, 0.01
 			],
 			"smooth_shading": false
 		}
 	],
-	
 	"objects": [
 		{
 			"name": "floor",
