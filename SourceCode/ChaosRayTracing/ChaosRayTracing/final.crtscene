@@ -4,9 +4,9 @@
 			0, 0, 0
 		],		
 		"image_settings": {
-			"width": 1080,
-			"height": 1080,
-			"bucket_size": 24
+			"width": 540,
+			"height": 540,
+			"bucket_size": 20
 		}
 	},
 	
@@ -24,7 +24,7 @@
 	
 	"lights": [
 		{
-			"intensity": 8,
+			"intensity": 0,
 			"position": [
 				0, 1.999, 0
 			]
@@ -86,7 +86,7 @@
 		{
 			"type": "emissive",
 			"emission": [
-				30.0, 30.0, 30.0
+				25.0, 25.0, 25.0
 			],
 			"smooth_shading": false
 		}
@@ -1657,7 +1657,7 @@
 		},
 		{
 			"name": "light",
-			"material_index": 0,
+			"material_index": 6,
 			"vertices": [
 				-0.25, 1.99999, -0.25,
 				0.25, 1.99999, -0.25,

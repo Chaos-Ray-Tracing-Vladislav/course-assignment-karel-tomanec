@@ -274,9 +274,9 @@ protected:
         return L;
     }
 
-    static constexpr uint32_t maxDepth = 0;
+    static constexpr uint32_t maxDepth = 5;
     static constexpr uint32_t maxColorComponent = 255;
-    static constexpr uint32_t sampleCount = 16;
+    static constexpr uint32_t sampleCount = 256;
     static constexpr uint32_t frameCount = 1;
     Scene& scene;
 };
