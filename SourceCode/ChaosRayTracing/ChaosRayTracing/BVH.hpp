@@ -240,5 +240,5 @@ private:
 	std::vector<BVHNode> nodes;
 	static constexpr uint32_t maxDepth = 10;
 	static constexpr uint32_t maxTriangleCountPerLeaf = 4;
-	static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::SAH;
+	static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::Equal;
 };
