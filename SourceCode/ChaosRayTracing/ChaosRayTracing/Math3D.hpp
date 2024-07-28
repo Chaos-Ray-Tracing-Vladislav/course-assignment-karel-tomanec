@@ -474,6 +474,19 @@ static Matrix4 MakeRotationZ(float t)
 		0.f, 0.f, 0.f, 1.f);
 }
 
+static Matrix4 LookAtInverse(const Vector3& eye, const Vector3& center, const Vector3& up) {
+	Vector3 f = Normalize(center - eye);
+	Vector3 s = Normalize(Cross(f, up));
+	Vector3 u = Cross(s, f);
+
+	return Matrix4(
+		s.x, u.x, -f.x, eye.x,
+		s.y, u.y, -f.y, eye.y,
+		s.z, u.z, -f.z, eye.z,
+		0.f, 0.f,  0.f, 1.f
+	);
+}
+
 inline Vector3 operator *(const Matrix4& H, const Vector3& v)
 {
 	return Vector3(H(0,0) * v.x + H(0,1) * v.y + H(0,2) * v.z,

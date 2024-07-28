@@ -87,7 +87,8 @@
 			"type": "emissive",
 			"emission": [
 				30.0, 30.0, 30.0
-			]
+			],
+			"smooth_shading": false
 		}
 	],
 	

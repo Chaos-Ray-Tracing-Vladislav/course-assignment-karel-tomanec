@@ -47,68 +47,79 @@ public:
         const uint32_t imageWidth = sceneSettings.imageSettings.width;
         const uint32_t imageHeight = sceneSettings.imageSettings.height;
 
-        Image image(imageWidth, imageHeight);
-
-        ThreadPool threadPool;
-        std::vector<std::future<void>> results;
-        uint32_t bucketSize = sceneSettings.imageSettings.bucketSize;
-        for (uint32_t startRow = 0; startRow < imageHeight; startRow += bucketSize)
+        for(uint32_t frame = 0; frame < frameCount; frame++)
         {
-            uint32_t endRow = startRow + bucketSize;
-            for (uint32_t startColumn = 0; startColumn < imageWidth; startColumn += bucketSize)
-            {
-                uint32_t endColumn = startColumn + bucketSize;
-                results.emplace_back(threadPool.Enqueue([&, startRow, endRow, startColumn, endColumn]
-                    {
-                        for (uint32_t rowIdx = startRow; rowIdx < endRow; ++rowIdx)
-                        {
+            // Set camera
+            float phi = 2.0f * std::numbers::pi * static_cast<float>(frame) / frameCount;
+            float radius = 2.2f;
+            Vector3 cameraPosition = Vector3(radius * sinf(phi), 1.f, radius * cosf(phi));
+            Vector3 center(0.f, 1.f, 0.f);
+            Vector3 up(0.f, 1.f, 0.f);
+            scene.camera.transform = LookAtInverse(cameraPosition, center, up);
 
-                            for (uint32_t colIdx = startColumn; colIdx < endColumn; ++colIdx)
+            Image image(imageWidth, imageHeight);
+
+            ThreadPool threadPool;
+            std::vector<std::future<void>> results;
+            uint32_t bucketSize = sceneSettings.imageSettings.bucketSize;
+            for (uint32_t startRow = 0; startRow < imageHeight; startRow += bucketSize)
+            {
+                uint32_t endRow = startRow + bucketSize;
+                for (uint32_t startColumn = 0; startColumn < imageWidth; startColumn += bucketSize)
+                {
+                    uint32_t endColumn = startColumn + bucketSize;
+                    results.emplace_back(threadPool.Enqueue([&, startRow, endRow, startColumn, endColumn]
+                        {
+                            for (uint32_t rowIdx = startRow; rowIdx < endRow; ++rowIdx)
                             {
 
-
-                                Vector3 color{ 0.f };
-
-                                std::random_device rd; // Seed
-                                std::mt19937 gen(rd()); // Mersenne Twister generator
-                                std::uniform_real_distribution<float> dis(-0.5f, 0.5f); // Uniform distribution between -0.5 and 0.5
-
-                                for(uint32_t sample = 0; sample < sampleCount; sample++)
+                                for (uint32_t colIdx = startColumn; colIdx < endColumn; ++colIdx)
                                 {
-                                    float y = static_cast<float>(rowIdx) + 0.5f + dis(gen); // To pixel center
-                                    y /= imageHeight; // To NDC
-                                    y = 1.f - (2.f * y); // To screen space
 
-                                    float x = static_cast<float>(colIdx) + 0.5f + dis(gen); // To pixel center
-                                    x /= imageWidth; // To NDC
-                                    x = 2.f * x - 1.f; // To screen space
-                                    x *= static_cast<float>(imageWidth) / imageHeight; // Consider aspect ratio
 
-                                	color += GetPixel(x, y);
+                                    Vector3 color{ 0.f };
+
+                                    std::random_device rd; // Seed
+                                    std::mt19937 gen(rd()); // Mersenne Twister generator
+                                    std::uniform_real_distribution<float> dis(-0.5f, 0.5f); // Uniform distribution between -0.5 and 0.5
+
+                                    for(uint32_t sample = 0; sample < sampleCount; sample++)
+                                    {
+                                        float y = static_cast<float>(rowIdx) + 0.5f + dis(gen); // To pixel center
+                                        y /= imageHeight; // To NDC
+                                        y = 1.f - (2.f * y); // To screen space
+
+                                        float x = static_cast<float>(colIdx) + 0.5f + dis(gen); // To pixel center
+                                        x /= imageWidth; // To NDC
+                                        x = 2.f * x - 1.f; // To screen space
+                                        x *= static_cast<float>(imageWidth) / imageHeight; // Consider aspect ratio
+
+                                        color += GetPixel(x, y);
+                                    }
+
+                                    color /= static_cast<float>(sampleCount);
+
+                                    image.SetPixel(colIdx, rowIdx, color.ToRGB());
                                 }
-
-                                color /= static_cast<float>(sampleCount);
-
-                                image.SetPixel(colIdx, rowIdx, color.ToRGB());
                             }
-                        }
-                    }));
+                        }));
+                }
             }
+
+            for (auto&& result : results)
+                result.get();
+
+            WriteToFile(image, sceneSettings, frame);
         }
-
-        for (auto&& result : results)
-            result.get();
-
-        WriteToFile(image, sceneSettings);
     }
 
 protected:
 
-    static void WriteToFile(const Image& image, const Scene::Settings& sceneSettings)
+    static void WriteToFile(const Image& image, const Scene::Settings& sceneSettings, uint32_t frame)
     {
         const auto imageWidth = image.GetWidth();
         const auto imageHeight = image.GetHeight();
-        PPMWriter writer(sceneSettings.sceneName + "_render", imageWidth, imageHeight, maxColorComponent);
+        PPMWriter writer(sceneSettings.sceneName + "_render_" + std::to_string(frame), imageWidth, imageHeight, maxColorComponent);
 
         // Reserve enough space in the string buffer
         std::string buffer;
@@ -263,8 +274,9 @@ protected:
         return L;
     }
 
-    static constexpr uint32_t maxDepth = 6;
+    static constexpr uint32_t maxDepth = 0;
     static constexpr uint32_t maxColorComponent = 255;
     static constexpr uint32_t sampleCount = 16;
+    static constexpr uint32_t frameCount = 1;
     Scene& scene;
 };

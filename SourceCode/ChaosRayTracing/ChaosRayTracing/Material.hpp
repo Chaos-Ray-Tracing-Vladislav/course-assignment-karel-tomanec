@@ -20,7 +20,7 @@ public:
 
 	Type type;
 	float ior;
-	bool smoothShading;
+	bool smoothShading = false;
 	std::shared_ptr<const Texture> texture;
 	Vector3 emission{ 0.f };
 
