@@ -42,14 +42,16 @@ public:
 		build(triangles, range, 0);
 	}
 
-	HitInfo closestHit(const std::vector<Triangle>& triangles, Ray& ray) const
+	HitInfo closestHit(const std::vector<Triangle>& triangles, const std::vector<Material>& materials, Ray& ray) const
 	{
-		std::function closestHitFunc = [&triangles, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
+		std::function closestHitFunc = [&triangles, &ray, &materials](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
 			{
 				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
 				{
 					const auto& triangle = triangles[triangleIndex];
-					HitInfo currHitInfo = triangle.Intersect(ray);
+					const auto& material = materials[triangle.materialIndex];
+
+					HitInfo currHitInfo = triangle.Intersect(ray, material.cullBackFace());
 
 					if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
 					{
@@ -70,7 +72,8 @@ public:
 				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
 				{
 					const auto& triangle = triangles[triangleIndex];
-					HitInfo currHitInfo = triangle.Intersect(ray);
+					const auto& material = materials[triangle.materialIndex];
+					HitInfo currHitInfo = triangle.Intersect(ray, material.cullBackFace());
 
 					if (currHitInfo.hit)
 					{

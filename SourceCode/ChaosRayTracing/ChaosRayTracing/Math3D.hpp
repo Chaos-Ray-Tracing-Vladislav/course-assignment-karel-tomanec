@@ -337,7 +337,7 @@ struct Triangle
 		return v1.uv * barycentrics.x + v2.uv * barycentrics.y + v0.uv * w;
 	}
 
-	HitInfo Intersect(const Ray& ray) const
+	HitInfo Intersect(const Ray& ray, bool backFaceCull) const
 	{
 		HitInfo info;
 
@@ -346,8 +346,8 @@ struct Triangle
 		const Vector3& c = v2.position;
 
 		float dirDotNorm = Dot(ray.directionN, faceNormal);
-		//if (dirDotNorm >= 0.f)
-		//	return info;
+		if (backFaceCull && dirDotNorm >= 0.f)
+			return info;
 
 		float t = Dot(a - ray.origin, faceNormal) / dirDotNorm;
 		if (t < 0.f || t > ray.maxT)

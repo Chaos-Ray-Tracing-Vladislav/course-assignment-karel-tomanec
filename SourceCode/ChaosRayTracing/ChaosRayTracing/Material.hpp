@@ -31,6 +31,13 @@ public:
 
 	Vector3 GetAlbedo(const Vector2& barycentrics, const Vector2& uv) const;
 
+	bool cullBackFace() const
+	{
+		if (type == REFRACTIVE)
+			return false;
+		return true;
+	}
+
 private:
 
 	Vector3 albedo{ 1.f };

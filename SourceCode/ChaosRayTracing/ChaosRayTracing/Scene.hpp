@@ -56,7 +56,7 @@ public:
 
 	HitInfo ClosestHit(Ray& ray) const
 	{
-		return bvh.closestHit(triangles, ray);
+		return bvh.closestHit(triangles, materials, ray);
 	}
 
 	bool AnyHit(Ray& ray) const
