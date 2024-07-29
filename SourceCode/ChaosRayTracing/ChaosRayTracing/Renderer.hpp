@@ -47,7 +47,7 @@ public:
         const uint32_t imageWidth = sceneSettings.imageSettings.width;
         const uint32_t imageHeight = sceneSettings.imageSettings.height;
 
-        for(uint32_t frame = 0; frame < frameCount; frame++)
+        for(uint32_t frame = 68; frame < frameCount; frame++)
         {
             // Set camera
             float phi = 2.0f * std::numbers::pi * static_cast<float>(frame) / frameCount;
