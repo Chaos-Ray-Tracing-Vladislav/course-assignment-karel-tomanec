@@ -90,11 +90,10 @@ public:
 
 		auto sampleEmissiveLight = [this, &posW](float rnd, const Vector2& rnd2, float choosePdf) -> LightSample
 			{
-				LightSample sample;
 				size_t emissiveIndex = static_cast<size_t>(rnd * emissiveTriangles.size());
 				emissiveIndex = std::min(emissiveIndex, emissiveTriangles.size() - 1);
 
-				sample = emissiveTriangles[emissiveIndex].sample(posW, rnd2);
+				LightSample sample = emissiveTriangles[emissiveIndex].sample(posW, rnd2);
 
 				float pdf = choosePdf / emissiveTriangles.size();
 				sample.pdf *= pdf;

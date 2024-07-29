@@ -532,11 +532,12 @@ inline Vector3 RandomInHemisphere(const Vector3& normal) {
 	float u = distribution(generator);
 	float v = distribution(generator);
 
-	float theta = 2.0f * std::numbers::pi_v<float> * u;
-	float phi = acos(2.0f * v - 1.0f);
-	float x = sin(phi) * cos(theta);
-	float y = sin(phi) * sin(theta);
-	float z = cos(phi);
+	float theta = acos(sqrt(1.0f - u));  // Theta follows a cosine distribution
+	float phi = 2.0f * std::numbers::pi_v<float> * v;
+
+	float x = sin(theta) * cos(phi);
+	float y = sin(theta) * sin(phi);
+	float z = cos(theta);
 
 	Vector3 randomDirection(x, y, z);
 

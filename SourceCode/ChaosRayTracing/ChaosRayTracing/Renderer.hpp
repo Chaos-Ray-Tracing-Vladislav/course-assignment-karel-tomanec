@@ -177,6 +177,7 @@ protected:
             Vector3 offsetOrigin = OffsetRayOrigin(hitInfo.point, hitInfo.normal);
             if (material.type == Material::Type::DIFFUSE || material.type == Material::Type::CONSTANT)
             {
+                Vector3 albedo = material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics));
                 // Sample light
                 std::optional<LightSample> lightSampleOpt = scene.sampleLight(offsetOrigin, Vector2(dis(gen), dis(gen)), Vector2(dis(gen), dis(gen)));
                 if (lightSampleOpt.has_value())
@@ -187,7 +188,6 @@ protected:
                     Ray shadowRay{ offsetOrigin, dirToLight, distanceToLight };
                     if (!scene.AnyHit(shadowRay))
                     {
-                        float attenuation = 1.0f / (distanceToLight * distanceToLight);
                         float nDotL = std::max(0.f, Dot(normal, dirToLight));
 
                         // Use the PDF returned from the light sample
@@ -198,7 +198,7 @@ protected:
                         float misWeight = PowerHeuristic(1, lightPdf, 1, brdfPdf);
 
                         // Correctly apply the MIS weight and the PDF
-                        L += misWeight * material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics)) * nDotL * lightSample.Le / lightPdf;
+                        L += 0.5f * misWeight * albedo * nDotL * lightSample.Le / lightPdf;
                     }
                 }
 
@@ -207,17 +207,19 @@ protected:
                 Ray nextRay{ offsetOrigin, randomDirection };
 
                 // Calculate the PDF for the BRDF sampling
-                float brdfPdf = std::max(0.f, Dot(randomDirection, normal)) / std::numbers::pi;
+                float brdfPdf = std::max(0.f, Dot(randomDirection, hitInfo.normal)) / std::numbers::pi;
 
                 // Trace the next ray and add its contribution
                 Vector3 indirectLighting = TraceRay(nextRay, gen, dis, depth + 1);
+                float nDotL = std::max(0.f, Dot(normal, randomDirection));
 
                 // Combine direct and indirect lighting with the BRDF PDF
-                L += material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics)) * indirectLighting / brdfPdf;
+
+                L += 0.5f * albedo * indirectLighting * nDotL / brdfPdf;
             }
             else if (material.type == Material::Type::EMISSIVE)
             {
-                //L += material.emission;
+                L += material.emission;
             }
             else if (material.type == Material::Type::REFLECTIVE)
             {
@@ -300,7 +302,7 @@ protected:
 
     static constexpr uint32_t maxDepth = 5;
     static constexpr uint32_t maxColorComponent = 255;
-    static constexpr uint32_t sampleCount = 16;
+    static constexpr uint32_t sampleCount = 64;
     static constexpr uint32_t frameCount = 1;
     Scene& scene;
 };

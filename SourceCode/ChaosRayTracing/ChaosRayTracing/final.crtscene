@@ -86,7 +86,7 @@
 		{
 			"type": "emissive",
 			"emission": [
-				0.01, 0.01, 0.01
+				1, 1, 1
 			],
 			"smooth_shading": false
 		}
