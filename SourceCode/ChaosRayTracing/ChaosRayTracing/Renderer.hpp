@@ -192,13 +192,13 @@ protected:
 
                         // Use the PDF returned from the light sample
                         float lightPdf = lightSample.pdf;
-                        float brdfPdf = nDotL / std::numbers::pi;
+                        //float brdfPdf = 1.f / (2.f * std::numbers::pi_v<float>);
 
                         // Multiple importance sampling (MIS) weight
-                        float misWeight = PowerHeuristic(1, lightPdf, 1, brdfPdf);
+                        float misWeight = 1.f;// PowerHeuristic(1, lightPdf, 1, brdfPdf);
 
                         // Correctly apply the MIS weight and the PDF
-                        L += 0.5f * misWeight * albedo * nDotL * lightSample.Le / lightPdf;
+                        L += misWeight * (albedo / std::numbers::pi_v<float>) * nDotL * lightSample.Le / lightPdf;
                     }
                 }
 
@@ -207,19 +207,18 @@ protected:
                 Ray nextRay{ offsetOrigin, randomDirection };
 
                 // Calculate the PDF for the BRDF sampling
-                float brdfPdf = std::max(0.f, Dot(randomDirection, hitInfo.normal)) / std::numbers::pi;
+                float pdf = std::max(0.f, Dot(hitInfo.normal, randomDirection)) / std::numbers::pi_v<float>;
 
                 // Trace the next ray and add its contribution
                 Vector3 indirectLighting = TraceRay(nextRay, gen, dis, depth + 1);
                 float nDotL = std::max(0.f, Dot(normal, randomDirection));
 
                 // Combine direct and indirect lighting with the BRDF PDF
-
-                L += 0.5f * albedo * indirectLighting * nDotL / brdfPdf;
+                L += (albedo / std::numbers::pi_v<float>) * nDotL * indirectLighting / pdf;
             }
             else if (material.type == Material::Type::EMISSIVE)
             {
-                L += material.emission;
+            	//L += material.emission;
             }
             else if (material.type == Material::Type::REFLECTIVE)
             {
@@ -302,7 +301,7 @@ protected:
 
     static constexpr uint32_t maxDepth = 5;
     static constexpr uint32_t maxColorComponent = 255;
-    static constexpr uint32_t sampleCount = 64;
+    static constexpr uint32_t sampleCount = 128;
     static constexpr uint32_t frameCount = 1;
     Scene& scene;
 };
