@@ -18,7 +18,7 @@ public:
 
     Renderer(Scene& scene) : scene(scene) {}
 
-    void RenderImage()
+    void renderImage()
     {
         Scene::Settings sceneSettings = scene.settings;
 
@@ -27,13 +27,13 @@ public:
 
         for(uint32_t frame = 0; frame < frameCount; frame++)
         {
-            // Set camera
+            // Set camera for the final scene
             float phi = 2.f * PI * static_cast<float>(frame) / frameCount;
             float radius = 2.2f;
             Vector3 cameraPosition = Vector3(radius * sinf(phi), 1.f, radius * cosf(phi));
             Vector3 center(0.f, 1.f, 0.f);
             Vector3 up(0.f, 1.f, 0.f);
-            scene.camera.transform = LookAtInverse(cameraPosition, center, up);
+            scene.camera.transform = lookAtInverse(cameraPosition, center, up);
 
             Image image(imageWidth, imageHeight);
 
@@ -55,27 +55,26 @@ public:
                                 {
                                     Vector3 color{ 0.f };
 
-                                    std::random_device rd; // Seed
-                                    std::mt19937 gen(rd()); // Mersenne Twister generator
-                                    std::uniform_real_distribution<float> dis(-0.5f, 0.5f); // Uniform distribution between -0.5 and 0.5
+
+                                    RandomSampler randomSampler;
 
                                     for(uint32_t sample = 0; sample < sampleCount; sample++)
                                     {
-                                        float y = static_cast<float>(rowIdx) + 0.5f + dis(gen); // To pixel center
-                                        y /= imageHeight; // To NDC
+                                        float y = static_cast<float>(rowIdx) + randomSampler.next1D();
+                                        y /= static_cast<float>(imageHeight); // To NDC
                                         y = 1.f - (2.f * y); // To screen space
 
-                                        float x = static_cast<float>(colIdx) + 0.5f + dis(gen); // To pixel center
-                                        x /= imageWidth; // To NDC
+                                        float x = static_cast<float>(colIdx) + randomSampler.next1D();
+                                        x /= static_cast<float>(imageWidth); // To NDC
                                         x = 2.f * x - 1.f; // To screen space
-                                        x *= static_cast<float>(imageWidth) / imageHeight; // Consider aspect ratio
+                                        x *= static_cast<float>(imageWidth) / static_cast<float>(imageHeight); // Consider aspect ratio
 
-                                        color += GetPixel(x, y);
+                                        color += getPixel(x, y);
                                     }
 
                                     color /= static_cast<float>(sampleCount);
 
-                                    image.SetPixel(colIdx, rowIdx, color.ToRGB());
+                                    image.setPixel(colIdx, rowIdx, color.toRGB());
                                 }
                             }
                         }));
@@ -85,16 +84,16 @@ public:
             for (auto&& result : results)
                 result.get();
 
-            WriteToFile(image, sceneSettings, frame);
+            writeToFile(image, sceneSettings, frame);
         }
     }
 
 private:
 
-    Vector3 GetPixel(float x, float y)
+    Vector3 getPixel(float x, float y)
     {
-        Vector3 origin = scene.camera.GetPosition();
-        Vector3 forward = scene.camera.GetLookDirection();
+        Vector3 origin = scene.camera.getPosition();
+        Vector3 forward = scene.camera.getLookDirection();
 
         // Assume up vector is Y axis in camera space and right vector is X axis in camera space
         Vector3 up = Normalize(scene.camera.transform * Vector3(0.f, 1.f, 0.f));
@@ -105,21 +104,20 @@ private:
 
         Ray ray{ origin, direction };
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> dis(0.f, 1.f);
 
-        Vector3 L = TraceRay(ray, false, 1.f, gen, dis);
+        RandomSampler randomSampler;
+        Vector3 L = traceRay(ray, false, 1.f, randomSampler, 0);
+
         return L;
     }
 
-    Vector3 TraceRay(Ray& ray, bool lightSampledByNEE, float prevBounceBrdfPdf, std::mt19937& gen, std::uniform_real_distribution<float>& dis, uint32_t depth = 0)
+    Vector3 traceRay(Ray& ray, bool lightSampledByNEE, float prevBounceBrdfPdf, RandomSampler& rnd, uint32_t depth)
     {
         Vector3 L{ 0.f };
         if (depth > maxDepth)
             return L;
 
-        HitInfo hitInfo = scene.ClosestHit(ray);
+        HitInfo hitInfo = scene.closestHit(ray);
         if (hitInfo.hit)
         {
             const auto& material = scene.materials[hitInfo.materialIndex];
@@ -127,23 +125,23 @@ private:
             const auto& triangle = scene.triangles[hitInfo.triangleIndex];
 
             if (material.smoothShading)
-                normal = triangle.GetNormal(hitInfo.barycentrics);
+                normal = triangle.getNormal(hitInfo.barycentrics);
 
             Vector3 offsetOrigin = OffsetRayOrigin(hitInfo.point, hitInfo.normal);
             if (material.type == Material::Type::DIFFUSE || material.type == Material::Type::CONSTANT)
             {
-                Vector3 albedo = material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics));
+                Vector3 albedo = material.getAlbedo(hitInfo.barycentrics, triangle.getUVs(hitInfo.barycentrics));
                 Vector3 brdf = albedo / PI;
 
                 // Sample light
-                std::optional<EmissiveLightSample> lightSampleOpt = scene.emissiveSampler.sample(offsetOrigin, Vector3(dis(gen), dis(gen),dis(gen)));
+                std::optional<EmissiveLightSample> lightSampleOpt = scene.emissiveSampler.sample(offsetOrigin, rnd.next3D());
                 if (lightSampleOpt.has_value())
                 {
                     EmissiveLightSample lightSample = lightSampleOpt.value();
                     Vector3 dirToLight = Normalize(lightSample.position - offsetOrigin);
-                    float distanceToLight = (lightSample.position - offsetOrigin).Magnitude();
+                    float distanceToLight = (lightSample.position - offsetOrigin).magnitude();
                     Ray shadowRay{ offsetOrigin, dirToLight, distanceToLight };
-                    if (!scene.AnyHit(shadowRay))
+                    if (!scene.anyHit(shadowRay))
                     {
                         float nDotL = std::max(0.f, Dot(normal, dirToLight));
 
@@ -151,19 +149,19 @@ private:
                         float brdfPdf = std::max(0.f, Dot(hitInfo.normal, dirToLight)) / PI;
 
                         // Multiple importance sampling (MIS) weight
-                        float misWeight = PowerHeuristic(lightPdf, brdfPdf);
+                        float misWeight = powerHeuristic(lightPdf, brdfPdf);
 
                         if(lightPdf > 0.f)
                             L += misWeight * brdf * nDotL * lightSample.Le / lightPdf;
                     }
                 }
 
-                Vector3 randomDirection = RandomInHemisphereCosine(hitInfo.normal);
+                Vector3 randomDirection = randomInHemisphereCosine(hitInfo.normal, rnd.next2D());
                 Ray nextRay{ offsetOrigin, randomDirection };
 
                 float pdf = std::max(0.f, Dot(hitInfo.normal, randomDirection)) / PI;
 
-                Vector3 indirectLighting = TraceRay(nextRay, true, pdf, gen, dis, depth + 1);
+                Vector3 indirectLighting = traceRay(nextRay, true, pdf, rnd, depth + 1);
                 float nDotL = std::max(0.f, Dot(normal, randomDirection));
 
                 if(pdf > 0.f)
@@ -176,7 +174,7 @@ private:
                 {
                     assert(triangle.emissiveIndex != -1);
                     float lightPdf = scene.emissiveSampler.evalPdf(triangle.emissiveIndex, ray.origin, hitInfo.point);
-                    misWeight = PowerHeuristic(prevBounceBrdfPdf, lightPdf );
+                    misWeight = powerHeuristic(prevBounceBrdfPdf, lightPdf );
                 }
             	L += material.emission * misWeight;
             }
@@ -184,7 +182,7 @@ private:
             {
                 Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                 Ray reflectionRay{ offsetOrigin,  reflectionDir };
-                L += material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics)) * TraceRay(reflectionRay, false, 1.f, gen, dis, depth + 1);
+                L += material.getAlbedo(hitInfo.barycentrics, triangle.getUVs(hitInfo.barycentrics)) * traceRay(reflectionRay, false, 1.f, rnd, depth + 1);
             }
             else if (material.type == Material::Type::REFRACTIVE)
             {
@@ -206,7 +204,7 @@ private:
                     // Total internal reflection case
                     Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                     Ray reflectionRay{ offsetOrigin,  reflectionDir };
-                    L += TraceRay(reflectionRay, false, 1.f, gen, dis, depth + 1);
+                    L += traceRay(reflectionRay, false, 1.f, rnd, depth + 1);
                 }
                 else
                 {
@@ -214,12 +212,12 @@ private:
                     Vector3 wt = -wi / eta + (cosThetaI / eta - cosThetaT) * normal;
                     Vector3 offsetOriginRefraction = OffsetRayOrigin(hitInfo.point, flipOrientation ? hitInfo.normal : -hitInfo.normal);
                     Ray refractionRay{ offsetOriginRefraction, wt };
-                    Vector3 refractionL = TraceRay(refractionRay, false, 1.f, gen, dis, depth + 1);
+                    Vector3 refractionL = traceRay(refractionRay, false, 1.f, rnd, depth + 1);
 
                     Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                     Vector3 offsetOriginReflection = OffsetRayOrigin(hitInfo.point, flipOrientation ? -hitInfo.normal : hitInfo.normal);
                     Ray reflectionRay{ offsetOriginReflection,  reflectionDir };
-                    Vector3 reflectionL = TraceRay(reflectionRay, false, 1.f, gen, dis, depth + 1);
+                    Vector3 reflectionL = traceRay(reflectionRay, false, 1.f, rnd, depth + 1);
 
                     float fresnel = 0.5f * std::powf(1.f + Dot(ray.directionN, normal), 5);
 
@@ -235,11 +233,11 @@ private:
         return L;
     }
 
-    static void WriteToFile(const Image& image, const Scene::Settings& sceneSettings, uint32_t frame);
+    static void writeToFile(const Image& image, const Scene::Settings& sceneSettings, uint32_t frame);
 
-    static constexpr uint32_t maxDepth = 6;
+    static constexpr uint32_t maxDepth = 5;
     static constexpr uint32_t maxColorComponent = 255;
-    static constexpr uint32_t sampleCount = 256;
+    static constexpr uint32_t sampleCount = 16;
     static constexpr uint32_t frameCount = 1;
 
     Scene& scene;

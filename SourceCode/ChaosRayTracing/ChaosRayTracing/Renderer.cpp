@@ -6,7 +6,7 @@
 
 #include <thread>
 
-void Renderer::WriteToFile(const Image& image, const Scene::Settings& sceneSettings, uint32_t frame)
+void Renderer::writeToFile(const Image& image, const Scene::Settings& sceneSettings, uint32_t frame)
 {
     const auto imageWidth = image.GetWidth();
     const auto imageHeight = image.GetHeight();
@@ -28,7 +28,7 @@ void Renderer::WriteToFile(const Image& image, const Scene::Settings& sceneSetti
         {
             for (uint32_t colIdx = 0; colIdx < imageWidth; ++colIdx) 
             {
-                localBuffer.append(image.GetPixel(colIdx, rowIdx).ToString()).append("\t");
+                localBuffer.append(image.GetPixel(colIdx, rowIdx).toString()).append("\t");
             }
             localBuffer.append("\n");
         }

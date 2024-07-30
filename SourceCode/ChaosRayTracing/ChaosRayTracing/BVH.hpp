@@ -51,7 +51,7 @@ public:
 					const auto& triangle = triangles[triangleIndex];
 					const auto& material = materials[triangle.materialIndex];
 
-					HitInfo currHitInfo = triangle.Intersect(ray, material.cullBackFace());
+					HitInfo currHitInfo = triangle.intersect(ray, material.cullBackFace());
 
 					if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
 					{
@@ -73,7 +73,7 @@ public:
 				{
 					const auto& triangle = triangles[triangleIndex];
 					const auto& material = materials[triangle.materialIndex];
-					HitInfo currHitInfo = triangle.Intersect(ray, material.cullBackFace());
+					HitInfo currHitInfo = triangle.intersect(ray, material.cullBackFace());
 
 					if (currHitInfo.hit)
 					{
@@ -164,7 +164,7 @@ private:
 					float midVal = (boundingBox.minPoint[splitAxis] + boundingBox.maxPoint[splitAxis]) * 0.5f;
 					auto midIt = std::partition(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis, midVal](const Triangle& tri)
 						{
-							return tri.Centroid()[splitAxis] < midVal;
+							return tri.centroid()[splitAxis] < midVal;
 						});
 					mid = static_cast<uint32_t>(std::distance(triangles.begin(), midIt));
 					if (midIt != triangles.begin() + range.start && midIt != triangles.begin() + range.end)
@@ -175,7 +175,7 @@ private:
 					mid = (range.start + range.end) / 2;
 					std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
 						{
-							return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
+							return triA.centroid()[splitAxis] < triB.centroid()[splitAxis];
 						});
 				}
 				break;
@@ -187,7 +187,7 @@ private:
 						mid = (range.start + range.end) / 2;
 						std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
 							{
-								return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
+								return triA.centroid()[splitAxis] < triB.centroid()[splitAxis];
 							});
 					}
 					else
@@ -198,7 +198,7 @@ private:
 						{
 							std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [axis](const Triangle& triA, const Triangle& triB)
 								{
-									return triA.Centroid()[axis] < triB.Centroid()[axis];
+									return triA.centroid()[axis] < triB.centroid()[axis];
 								});
 							for (uint32_t index = range.start + 1; index < range.end; index++)
 							{
@@ -216,7 +216,7 @@ private:
 
 						std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
 							{
-								return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
+								return triA.centroid()[splitAxis] < triB.centroid()[splitAxis];
 							});
 					}
 				}

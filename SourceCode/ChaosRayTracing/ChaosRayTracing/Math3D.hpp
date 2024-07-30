@@ -5,18 +5,17 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
-#include <iso646.h>
 #include <random>
 #include <stdexcept>
 
 constexpr float PI = std::numbers::pi_v<float>;
 
-constexpr float DegToRad(float degrees)
+constexpr float degToRad(float degrees)
 {
 	return degrees * (PI / 180.f);
 }
 
-constexpr float RadToDeg(float radians)
+constexpr float radToDeg(float radians)
 {
 	return radians * (180.f / PI);
 }
@@ -27,7 +26,7 @@ struct RGB
 	uint8_t g;
 	uint8_t b;
 
-	std::string ToString() const
+	std::string toString() const
 	{
 		char buffer[12];
 		std::snprintf(buffer, sizeof(buffer), "%u %u %u", r, g, b);
@@ -108,7 +107,7 @@ struct Vector3
 
 	Vector3 operator -() const
 	{
-		return Vector3(-x, -y, -z);
+		return {-x, -y, -z};
 	}
 
 	Vector3& operator *=(float s)
@@ -152,12 +151,12 @@ struct Vector3
 		return (*this);
 	}
 
-	float Magnitude() const
+	float magnitude() const
 	{
 		return std::sqrt(x * x + y * y + z * z);
 	}
 
-	RGB ToRGB() const
+	RGB toRGB() const
 	{
 		return RGB{ static_cast<uint8_t>(std::clamp(x, 0.f, 1.f) * 255), static_cast<uint8_t>(std::clamp(y, 0.f, 1.f) * 255), static_cast<uint8_t>(std::clamp(z, 0.f, 1.f) * 255) };
 	}
@@ -206,12 +205,12 @@ inline Vector3 operator /(const Vector3& v, float s)
 
 inline Vector3 Normalize(const Vector3& v)
 {
-	return v / v.Magnitude();
+	return v / v.magnitude();
 }
 
 inline float Magnitude(const Vector3& v)
 {
-	return v.Magnitude();
+	return v.magnitude();
 }
 
 inline Vector3 Cross(const Vector3& a, const Vector3& b)
@@ -329,29 +328,29 @@ struct Triangle
 		this->faceNormal = Normalize(Cross(v1.position - v0.position, v2.position - v0.position));
 	}
 
-	Vector3 Centroid() const
+	Vector3 centroid() const
 	{
 		return (v0.position + v1.position + v2.position) / 3.f;
 	}
 
-	float Area() const
+	float area() const
 	{
-		return Cross(v1.position - v0.position, v2.position - v0.position).Magnitude() * 0.5f;
+		return Cross(v1.position - v0.position, v2.position - v0.position).magnitude() * 0.5f;
 	}
 
-	Vector3 GetNormal(const Vector2& barycentrics) const
+	Vector3 getNormal(const Vector2& barycentrics) const
 	{
 		float w = 1.f - barycentrics.x - barycentrics.y;
 		return Normalize(v1.normal * barycentrics.x + v2.normal * barycentrics.y + v0.normal * w);
 	}
 
-	Vector2 GetUVs(const Vector2& barycentrics) const
+	Vector2 getUVs(const Vector2& barycentrics) const
 	{
 		float w = 1.f - barycentrics.x - barycentrics.y;
 		return v1.uv * barycentrics.x + v2.uv * barycentrics.y + v0.uv * w;
 	}
 
-	HitInfo Intersect(const Ray& ray, bool backFaceCull) const
+	HitInfo intersect(const Ray& ray, bool backFaceCull) const
 	{
 		HitInfo info;
 
@@ -384,7 +383,7 @@ struct Triangle
 			return info;
 
 		// Calculate the barycentric coordinates
-		float triArea = Magnitude(Cross(b - a, c - a)); // Area of the whole triangle
+		float triArea = Magnitude(Cross(b - a, c - a)); // area of the whole triangle
 		info.barycentrics.x = Magnitude(Cross(p - a, c - a)) / triArea;
 		info.barycentrics.y = Magnitude(Cross(b - a, p - a)) / triArea;
 
@@ -430,89 +429,101 @@ public:
 		return n[j][i];
 	}
 
-	const Point3& GetTranslation(void) const
+	const Point3& getTranslation(void) const
 	{
 		return *reinterpret_cast<const Point3*>(n[3]);
 	}
 
-	static Matrix4 Identity()
+	static Matrix4 identity()
 	{
-		return Matrix4(
+		return {
 			1.f, 0.f, 0.f, 0.f,
 			0.f, 1.f, 0.f, 0.f,
 			0.f, 0.f, 1.f, 0.f,
 			0.f, 0.f, 0.f, 1.f
-		);
+		};
 	}
 };
 
-static Matrix4 MakeTranslation(Vector3 t)
+static Matrix4 makeTranslation(Vector3 t)
 {
 
-	return Matrix4(	1.f, 0.f, 0.f, t.x,
+	return {
+		1.f, 0.f, 0.f, t.x,
 					0.f, 1.f, 0.f, t.y,
 					0.f, 0.f, 1.f, t.z,
-					0.f, 0.f, 0.f, 1.f);
+					0.f, 0.f, 0.f, 1.f
+	};
 }
 
-static Matrix4 MakeRotationX(float t)
+static Matrix4 makeRotationX(float t)
 {
 	float c = cos(t);
 	float s = sin(t);
 
-	return Matrix4(1.f, 0.f, 0.f, 0.f,
+	return {
+		1.f, 0.f, 0.f, 0.f,
 		0.f,  c,   -s, 0.f,
 		0.f,  s,    c , 0.f,
-		0.f, 0.f, 0.f, 1.f);
+		0.f, 0.f, 0.f, 1.f
+	};
 }
 
-static Matrix4 MakeRotationY(float t)
+static Matrix4 makeRotationY(float t)
 {
 	float c = cos(t);
 	float s = sin(t);
 
-	return Matrix4( c,   0.f,  s, 0.f,
+	return {
+		c,   0.f,  s, 0.f,
 		0.f, 1.f, 0.f, 0.f,
 		-s,   0.f,  c  , 0.f,
-		0.f, 0.f, 0.f, 1.f);
+		0.f, 0.f, 0.f, 1.f
+	};
 }
 
-static Matrix4 MakeRotationZ(float t)
+static Matrix4 makeRotationZ(float t)
 {
 	float c = cos(t);
 	float s = sin(t);
 
-	return Matrix4( c,   -s,   0.f, 0.f,
+	return {
+		c,   -s,   0.f, 0.f,
 		s,    c,   0.f, 0.f,
 		0.f, 0.f, 1.f, 0.f,
-		0.f, 0.f, 0.f, 1.f);
+		0.f, 0.f, 0.f, 1.f
+	};
 }
 
-static Matrix4 LookAtInverse(const Vector3& eye, const Vector3& center, const Vector3& up) {
+static Matrix4 lookAtInverse(const Vector3& eye, const Vector3& center, const Vector3& up) {
 	Vector3 f = Normalize(center - eye);
 	Vector3 s = Normalize(Cross(f, up));
 	Vector3 u = Cross(s, f);
 
-	return Matrix4(
+	return {
 		s.x, u.x, -f.x, eye.x,
 		s.y, u.y, -f.y, eye.y,
 		s.z, u.z, -f.z, eye.z,
 		0.f, 0.f,  0.f, 1.f
-	);
+	};
 }
 
 inline Vector3 operator *(const Matrix4& H, const Vector3& v)
 {
-	return Vector3(H(0,0) * v.x + H(0,1) * v.y + H(0,2) * v.z,
+	return {
+		H(0,0) * v.x + H(0,1) * v.y + H(0,2) * v.z,
 		H(1,0) * v.x + H(1,1) * v.y + H(1,2) * v.z,
-		H(2,0) * v.x + H(2,1) * v.y + H(2,2) * v.z);
+		H(2,0) * v.x + H(2,1) * v.y + H(2,2) * v.z
+	};
 }
 
 inline Point3 operator *(const Matrix4& H, const Point3& p)
 {
-	return Point3(H(0,0) * p.x + H(0,1) * p.y + H(0,2) * p.z + H(0,3),
+	return {
+		H(0,0) * p.x + H(0,1) * p.y + H(0,2) * p.z + H(0,3),
 		H(1,0) * p.x + H(1,1) * p.y + H(1,2) * p.z + H(1,3),
-		H(2,0) * p.x + H(2,1) * p.y + H(2,2) * p.z + H(2,3));
+		H(2,0) * p.x + H(2,1) * p.y + H(2,2) * p.z + H(2,3)
+	};
 }
 
 inline Matrix4 operator*(const Matrix4& A, const Matrix4& B)
@@ -539,15 +550,10 @@ struct Range {
 	uint32_t count() const { return end - start; }
 };
 
-inline Vector3 RandomInHemisphereCosine(const Vector3& normal) {
-	static thread_local std::default_random_engine generator;
-	static thread_local std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+inline Vector3 randomInHemisphereCosine(const Vector3& normal, const Vector2& rnd) {
 
-	float u = distribution(generator);
-	float v = distribution(generator);
-
-	float theta = acos(sqrt(1.0f - u));  // Theta follows a cosine distribution
-	float phi = 2.0f * std::numbers::pi_v<float> * v;
+	float theta = acos(sqrt(1.0f - rnd.x));  // Theta follows a cosine distribution
+	float phi = 2.0f * PI * rnd.y;
 
 	float x = sin(theta) * cos(phi);
 	float y = sin(theta) * sin(phi);

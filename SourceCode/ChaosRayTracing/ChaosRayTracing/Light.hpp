@@ -41,7 +41,7 @@ struct EmissiveTriangle
         Vector3 toLight = sampledPosition - posW;
         float distSqr = std::max(FLT_MIN, Dot(toLight, toLight));
 
-        float area = triangle.Area();
+        float area = triangle.area();
         float cosTheta = Dot(triangle.faceNormal, -toLight);
         float pdf = distSqr / (cosTheta * area);
 
@@ -56,7 +56,7 @@ struct EmissiveTriangle
     {
         Vector3 toLight = sampledPosition - posW;
         float distSqr = std::max(FLT_MIN, Dot(toLight, toLight));
-        float area = triangle.Area();
+        float area = triangle.area();
         float cosTheta = Dot(triangle.faceNormal, -toLight);
 
         return distSqr / (cosTheta * area);

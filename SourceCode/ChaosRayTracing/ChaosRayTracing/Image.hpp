@@ -13,7 +13,7 @@ public:
         pixels.resize(width * height);
     }
 
-    void SetPixel(uint32_t x, uint32_t y, const RGB& color)
+    void setPixel(uint32_t x, uint32_t y, const RGB& color)
     {
         pixels[y * width + x] = color;
     }

@@ -5,13 +5,14 @@
 #include "Material.hpp"
 #include "SceneParser.hpp"
 #include "Light.hpp"
+#include "EmissiveSampler.hpp"
 
 #include <vector>
 #include <algorithm>
 #include <map>
 #include <optional>
+#include <iostream>
 
-#include "EmissiveSampler.hpp"
 
 class Scene
 {
@@ -39,13 +40,13 @@ public:
 		uint32_t height;
 		uint32_t bucketSize = 24;
 	};
+
 	struct Settings
 	{
 		std::string sceneName;
 		Vector3 backgroundColor;
 		ImageSettings imageSettings;
 	};
-
 
 	Scene(const std::string& fileName)
 	{
@@ -56,12 +57,12 @@ public:
 		std::cout << fileName << " BVH built.\n";
 	}
 
-	HitInfo ClosestHit(Ray& ray) const
+	HitInfo closestHit(Ray& ray) const
 	{
 		return bvh.closestHit(triangles, materials, ray);
 	}
 
-	bool AnyHit(Ray& ray) const
+	bool anyHit(Ray& ray) const
 	{
 		return bvh.anyHit(triangles, materials, ray);
 	}

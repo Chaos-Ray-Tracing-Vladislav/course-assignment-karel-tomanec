@@ -24,7 +24,7 @@ inline Vector3 loadVector(const rapidjson::Value::ConstArray& arr)
 inline Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr) 
 {
 	assert(arr.Size() == 9);
-	Matrix4 result = Matrix4::Identity();
+	Matrix4 result = Matrix4::identity();
 	for(uint32_t i = 0; i < 3; i++)
 	{
 		for(uint32_t j = 0; j < 3; j++) 
@@ -134,7 +134,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 
 		const Value& positionVal = cameraVal.FindMember(kPositionStr.c_str())->value;
 		assert(!positionVal.IsNull() && positionVal.IsArray());
-		Matrix4 translation = MakeTranslation(loadVector(positionVal.GetArray()));
+		Matrix4 translation = makeTranslation(loadVector(positionVal.GetArray()));
 
 		scene.camera.transform =  translation * rotation;
 	}
@@ -268,7 +268,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				assert(!albedoVal.IsNull());
 				if (albedoVal.IsArray())
 				{
-					material.SetAlbedo(loadVector(albedoVal.GetArray()));
+					material.setAlbedo(loadVector(albedoVal.GetArray()));
 				}
 				else if (albedoVal.IsString())
 				{
