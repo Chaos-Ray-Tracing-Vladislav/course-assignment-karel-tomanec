@@ -166,6 +166,16 @@ struct Vector3
 	{
 		return "(" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ")";
 	}
+
+	Vector2 xy() const
+	{
+		return { x, y };
+	}
+
+	Vector2 yz() const
+	{
+		return { y, z };
+	}
 };
 
 inline Vector3 operator +(const Vector3& a, const Vector3& b)

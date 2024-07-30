@@ -2,14 +2,14 @@
 
 #include "Math3D.hpp"
 
-inline float PowerHeuristic(int nf, float fPdf, int ng, float gPdf)
+inline float PowerHeuristic(float fPdf, float gPdf)
 {
-    float f = nf * fPdf;
-    float g = ng * gPdf;
+    float f = fPdf;
+    float g = gPdf;
     return (f * f) / (f * f + g * g);
 }
 
-struct LightSample
+struct EmissiveLightSample
 {
 	Vector3 position;
 	Vector3 Le;
@@ -27,7 +27,7 @@ struct EmissiveTriangle
 	Triangle triangle;
 	Vector3 emission;
 
-    LightSample sample(const Vector3& posW, const Vector2& rnd) const
+    EmissiveLightSample sample(const Vector3& posW, const Vector2& rnd) const
 	{
         float u = rnd.x;
         float v = rnd.y;
@@ -55,14 +55,14 @@ struct EmissiveTriangle
 
         float pdf = distSqr / (cosTheta * area);
 
-        LightSample sample;
+        EmissiveLightSample sample;
         sample.position = sampledPosition;
         sample.Le = emission;
         sample.pdf = pdf;
         return sample;
     }
 
-    float pdf(const Vector3& posW, const Vector3 sampledPosition)
+    float pdf(const Vector3& posW, const Vector3 sampledPosition) const
     {
         Vector3 toLight = sampledPosition - posW;
         const float distSqr = std::max(FLT_MIN, Dot(toLight, toLight));

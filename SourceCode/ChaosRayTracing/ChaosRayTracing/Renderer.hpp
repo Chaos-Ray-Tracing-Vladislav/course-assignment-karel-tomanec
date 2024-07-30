@@ -154,10 +154,10 @@ protected:
             {
                 Vector3 albedo = material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics));
                 // Sample light
-                std::optional<LightSample> lightSampleOpt = scene.sampleLight(offsetOrigin, Vector2(dis(gen), dis(gen)), Vector2(dis(gen), dis(gen)));
+                std::optional<EmissiveLightSample> lightSampleOpt = scene.emissiveSampler.sample(offsetOrigin, Vector3(dis(gen), dis(gen),dis(gen)));
                 if (lightSampleOpt.has_value())
                 {
-                    LightSample lightSample = lightSampleOpt.value();
+                    EmissiveLightSample lightSample = lightSampleOpt.value();
                     Vector3 dirToLight = Normalize(lightSample.position - offsetOrigin);
                     float distanceToLight = (lightSample.position - offsetOrigin).Magnitude();
                     Ray shadowRay{ offsetOrigin, dirToLight, distanceToLight };
@@ -169,7 +169,7 @@ protected:
                         float brdfPdf = std::max(0.f, Dot(hitInfo.normal, dirToLight)) / PI;
 
                         // Multiple importance sampling (MIS) weight
-                        float misWeight = PowerHeuristic(1, lightPdf, 1, brdfPdf);
+                        float misWeight = PowerHeuristic(lightPdf, brdfPdf);
 
                         if(lightPdf > 0.f)
                             L += misWeight * (albedo / PI) * nDotL * lightSample.Le / lightPdf;
@@ -193,8 +193,8 @@ protected:
                 if (lightSampledByNEE)
                 {
                     assert(triangle.emissiveIndex != -1);
-                    float lightPdf = scene.emissiveTriangles[triangle.emissiveIndex].pdf(ray.origin, hitInfo.point);
-                    misWeight = PowerHeuristic(1, prevBounceBrdfPdf, 1, lightPdf * 0.25f);
+                    float lightPdf = scene.emissiveSampler.evalPdf(triangle.emissiveIndex, ray.origin, hitInfo.point);
+                    misWeight = PowerHeuristic(prevBounceBrdfPdf, lightPdf );
                 }
             	L += material.emission * misWeight;
             }
@@ -279,7 +279,7 @@ protected:
 
     static constexpr uint32_t maxDepth = 5;
     static constexpr uint32_t maxColorComponent = 255;
-    static constexpr uint32_t sampleCount = 64;
+    static constexpr uint32_t sampleCount = 256;
     static constexpr uint32_t frameCount = 1;
 
     Scene& scene;
