@@ -17,14 +17,17 @@
 class Scene
 {
 public:
-
 	// Move constructor
 	Scene(Scene&& other) noexcept
-		: textures(std::move(other.textures)) {}
+		: textures(std::move(other.textures))
+	{
+	}
 
 	// Move assignment operator
-	Scene& operator=(Scene&& other) noexcept {
-		if (this != &other) {
+	Scene& operator=(Scene&& other) noexcept
+	{
+		if (this != &other)
+		{
 			textures = std::move(other.textures);
 		}
 		return *this;

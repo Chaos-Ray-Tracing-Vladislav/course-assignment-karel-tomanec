@@ -3,7 +3,7 @@
 
 #include "Math3D.hpp"
 
-class AABB 
+class AABB
 {
 public:
 	Vector3 minPoint = Vector3(std::numeric_limits<float>::max());
@@ -11,7 +11,9 @@ public:
 
 	AABB() = default;
 
-	AABB(Vector3 minPoint, Vector3 maxPoint) : minPoint(minPoint), maxPoint(maxPoint) {}
+	AABB(Vector3 minPoint, Vector3 maxPoint) : minPoint(minPoint), maxPoint(maxPoint)
+	{
+	}
 
 	AABB(const Triangle& triangle)
 	{
@@ -27,10 +29,10 @@ public:
 		auto end = triangles.begin() + range.end;
 
 		std::for_each(start, end, [&resAABB](const auto& triangle)
-			{
-				AABB triAABB(triangle);
-				resAABB |= triAABB;
-			});
+		{
+			AABB triAABB(triangle);
+			resAABB |= triAABB;
+		});
 
 		minPoint = resAABB.minPoint;
 		maxPoint = resAABB.maxPoint;
@@ -41,14 +43,14 @@ public:
 		return maxPoint.x >= minPoint.x && maxPoint.y >= minPoint.y && maxPoint.z >= minPoint.z;
 	}
 
-	Vector3 center() const 
-	{ 
-		return (minPoint + maxPoint) * 0.5f; 
+	Vector3 center() const
+	{
+		return (minPoint + maxPoint) * 0.5f;
 	}
 
-	Vector3 extent() const 
-	{ 
-		return maxPoint - minPoint; 
+	Vector3 extent() const
+	{
+		return maxPoint - minPoint;
 	}
 
 	float area() const
@@ -85,11 +87,12 @@ public:
 
 	AABB& operator|=(const AABB& rhs) { return include(rhs); }
 
-	bool intersect(const Ray& ray) const {
+	bool intersect(const Ray& ray) const
+	{
 		float minT = 0.f;
 		float maxT = ray.maxT;
 
-		for (uint8_t d = 0; d < 3; ++d) 
+		for (uint8_t d = 0; d < 3; ++d)
 		{
 			float t1 = (minPoint[d] - ray.origin[d]) * ray.directionNInv[d];
 			float t2 = (maxPoint[d] - ray.origin[d]) * ray.directionNInv[d];

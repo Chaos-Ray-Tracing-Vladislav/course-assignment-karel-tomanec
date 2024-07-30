@@ -21,53 +21,55 @@ inline Vector3 loadVector(const rapidjson::Value::ConstArray& arr)
 	};
 }
 
-inline Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr) 
+inline Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() == 9);
 	Matrix4 result = Matrix4::identity();
-	for(uint32_t i = 0; i < 3; i++)
+	for (uint32_t i = 0; i < 3; i++)
 	{
-		for(uint32_t j = 0; j < 3; j++) 
+		for (uint32_t j = 0; j < 3; j++)
 			result(i, j) = static_cast<float>(arr[i + 3 * j].GetDouble());
 	}
 	return result;
 }
 
-inline std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<Vector3> result;
 	result.reserve(arr.Size() / 3);
-	for(uint32_t i = 0; i < arr.Size(); i += 3) {
+	for (uint32_t i = 0; i < arr.Size(); i += 3)
+	{
 		result.emplace_back(
-			static_cast<float>(arr[i].GetDouble()), 
-				static_cast<float>(arr[i+1].GetDouble()), 
-				static_cast<float>(arr[i+2].GetDouble())
+			static_cast<float>(arr[i].GetDouble()),
+			static_cast<float>(arr[i + 1].GetDouble()),
+			static_cast<float>(arr[i + 2].GetDouble())
 		);
 	}
 	return result;
 }
 
-inline std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<Vector2> result;
 	result.reserve(arr.Size() / 3);
-	for(uint32_t i = 0; i < arr.Size(); i += 3) {
+	for (uint32_t i = 0; i < arr.Size(); i += 3)
+	{
 		result.emplace_back(
-			static_cast<float>(arr[i].GetDouble()), 
-				static_cast<float>(arr[i+1].GetDouble())
+			static_cast<float>(arr[i].GetDouble()),
+			static_cast<float>(arr[i + 1].GetDouble())
 		);
 	}
 	return result;
 }
 
-inline std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<uint32_t> result;
 	result.reserve(arr.Size() / 3);
-	for(uint32_t i = 0; i < arr.Size(); ++i)
+	for (uint32_t i = 0; i < arr.Size(); ++i)
 		result.emplace_back(arr[i].GetInt());
 	return result;
 }
@@ -91,7 +93,7 @@ rapidjson::Document SceneParser::getJsonDocument(const std::string& fileName)
 	}
 	assert(doc.IsObject());
 
-	return doc;	// RVO
+	return doc; // RVO
 }
 
 void SceneParser::parseSceneFile(const std::string& fileName) const
@@ -112,7 +114,8 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 		{
 			const Value& imageWidthVal = imageSettingsVal.FindMember(kImageWidthStr.c_str())->value;
 			const Value& imageHeightVal = imageSettingsVal.FindMember(kImageHeightStr.c_str())->value;
-			assert(!imageWidthVal.IsNull() && imageWidthVal.IsInt() && !imageHeightVal.IsNull() && imageHeightVal.IsInt());
+			assert(
+				!imageWidthVal.IsNull() && imageWidthVal.IsInt() && !imageHeightVal.IsNull() && imageHeightVal.IsInt());
 			scene.settings.imageSettings.width = imageWidthVal.GetInt();
 			scene.settings.imageSettings.height = imageHeightVal.GetInt();
 
@@ -136,7 +139,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 		assert(!positionVal.IsNull() && positionVal.IsArray());
 		Matrix4 translation = makeTranslation(loadVector(positionVal.GetArray()));
 
-		scene.camera.transform =  translation * rotation;
+		scene.camera.transform = translation * rotation;
 	}
 
 	const Value& lightsValue = doc.FindMember(kLightsStr.c_str())->value;
@@ -168,7 +171,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 			const Value& nameValue = it->FindMember(kTexturesNameStr.c_str())->value;
 			assert(!nameValue.IsNull() && nameValue.IsString());
 			std::string name = std::string(nameValue.GetString());
-			
+
 			const Value& typeValue = it->FindMember(kTexturesTypeStr.c_str())->value;
 			assert(!typeValue.IsNull() && typeValue.IsString());
 			std::string type = std::string(typeValue.GetString());
@@ -194,7 +197,8 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				assert(!edgeWidthValue.IsNull() && edgeWidthValue.IsFloat());
 				float edgeWidth = edgeWidthValue.GetFloat();
 
-				scene.textures.emplace(name, std::make_shared<const EdgesTexture>(name, edgeColor, innerColor, edgeWidth));
+				scene.textures.emplace(
+					name, std::make_shared<const EdgesTexture>(name, edgeColor, innerColor, edgeWidth));
 			}
 			else if (type == "checker")
 			{
@@ -231,11 +235,11 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 	}
 
 	const std::map<std::string, Material::Type> materialTypeMap = {
-		{ kTypeConstantStr, Material::Type::CONSTANT},
-		{ kTypeDiffuseStr, Material::Type::DIFFUSE},
-		{ kTypeReflectiveStr, Material::Type::REFLECTIVE},
-		{ kTypeRefractiveStr, Material::Type::REFRACTIVE},
-		{ kTypeEmissiveStr, Material::Type::EMISSIVE},
+		{kTypeConstantStr, Material::Type::CONSTANT},
+		{kTypeDiffuseStr, Material::Type::DIFFUSE},
+		{kTypeReflectiveStr, Material::Type::REFLECTIVE},
+		{kTypeRefractiveStr, Material::Type::REFRACTIVE},
+		{kTypeEmissiveStr, Material::Type::EMISSIVE},
 	};
 
 	// Load materials
@@ -262,7 +266,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				assert(!emissionVal.IsNull() && emissionVal.IsArray());
 				material.emission = loadVector(emissionVal.GetArray());
 			}
-			else 
+			else
 			{
 				const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
 				assert(!albedoVal.IsNull());
@@ -293,9 +297,9 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 	}
 
 	const Value& objectsValue = doc.FindMember(kObjectsStr.c_str())->value;
-	if(!objectsValue.IsNull() && objectsValue.IsArray()) 
+	if (!objectsValue.IsNull() && objectsValue.IsArray())
 	{
-		for(Value::ConstValueIterator it = objectsValue.Begin(); it != objectsValue.End(); ++it)
+		for (Value::ConstValueIterator it = objectsValue.Begin(); it != objectsValue.End(); ++it)
 		{
 			const Value& verticesValue = it->FindMember(kVerticesStr.c_str())->value;
 			assert(!verticesValue.IsNull() && verticesValue.IsArray());
@@ -314,7 +318,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 			std::vector<uint32_t> indices = loadIndices(trianglesValue.GetArray());
 
 			// Compute vertex normals
-			std::vector<Vector3> vertexNormals(vertices.size(), { 0.0f, 0.0f, 0.0f });
+			std::vector<Vector3> vertexNormals(vertices.size(), {0.0f, 0.0f, 0.0f});
 			for (uint32_t i = 0; i < indices.size(); i += 3)
 			{
 				const auto& i0 = indices[i];
@@ -360,19 +364,18 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				const auto& uv2 = !uvs.empty() ? uvs[i2] : 1.f;
 
 				scene.triangles.emplace_back(
-					Vertex{ v0, n0, uv0 },
-					Vertex{ v1, n1, uv1 },
-					Vertex{ v2, n2, uv2 },
+					Vertex{v0, n0, uv0},
+					Vertex{v1, n1, uv1},
+					Vertex{v2, n2, uv2},
 					materialIndex,
 					isEmissive ? scene.emissiveSampler.emissiveTriangles.size() : -1
 				);
 
-				if(isEmissive)
+				if (isEmissive)
 				{
 					scene.emissiveSampler.emissiveTriangles.emplace_back(scene.triangles.back(), material.emission);
 				}
 			}
 		}
 	}
-
 }

@@ -4,10 +4,9 @@
 #include <stdexcept>
 #include <fstream>
 
-class PPMWriter 
+class PPMWriter
 {
 public:
-
 	PPMWriter(std::string filename, uint32_t imageWidth, uint32_t imageHeight, uint32_t maxColorComponent)
 		: ppmFileStream(filename + ".ppm", std::ios::out | std::ios::binary)
 	{
@@ -19,13 +18,13 @@ public:
 		ppmFileStream << maxColorComponent << "\n";
 	}
 
-	~PPMWriter() 
+	~PPMWriter()
 	{
 		if (ppmFileStream.is_open())
 			ppmFileStream.close();
 	}
 
-	friend PPMWriter& operator<<(PPMWriter& writer, const std::string& data) 
+	friend PPMWriter& operator<<(PPMWriter& writer, const std::string& data)
 	{
 		writer.ppmFileStream << data;
 		return writer;

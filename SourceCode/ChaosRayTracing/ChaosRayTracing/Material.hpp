@@ -22,7 +22,7 @@ public:
 	float ior;
 	bool smoothShading = false;
 	std::shared_ptr<const Texture> texture;
-	Vector3 emission{ 0.f };
+	Vector3 emission{0.f};
 
 	void setAlbedo(Vector3 albedo)
 	{
@@ -39,6 +39,5 @@ public:
 	}
 
 private:
-
-	Vector3 albedo{ 1.f };
+	Vector3 albedo{1.f};
 };

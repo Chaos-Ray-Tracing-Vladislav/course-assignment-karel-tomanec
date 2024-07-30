@@ -20,7 +20,7 @@ constexpr float radToDeg(float radians)
 	return radians * (180.f / PI);
 }
 
-struct RGB 
+struct RGB
 {
 	uint8_t r;
 	uint8_t g;
@@ -30,20 +30,24 @@ struct RGB
 	{
 		char buffer[12];
 		std::snprintf(buffer, sizeof(buffer), "%u %u %u", r, g, b);
-		return { buffer };
+		return {buffer};
 	}
 };
 
-struct Vector2 
+struct Vector2
 {
 	float x;
 	float y;
 
 	Vector2() = default;
 
-	Vector2(float v) : x(v), y(v) {}
+	Vector2(float v) : x(v), y(v)
+	{
+	}
 
-	Vector2(float x, float y) : x(x), y(y) {}
+	Vector2(float x, float y) : x(x), y(y)
+	{
+	}
 };
 
 inline Vector2 operator +(const Vector2& a, const Vector2& b)
@@ -58,18 +62,18 @@ inline Vector2 operator -(const Vector2& a, const Vector2& b)
 
 inline Vector2 operator *(const Vector2& v, float s)
 {
-	return { v.x * s, v.y * s };
+	return {v.x * s, v.y * s};
 }
 
 inline Vector2 operator *(const Vector2& v, const Vector2& u)
 {
-	return { v.x * u.x, v.y * u.y };
+	return {v.x * u.x, v.y * u.y};
 }
 
 inline Vector2 operator /(const Vector2& v, float s)
 {
 	s = 1.f / s;
-	return { v.x * s, v.y * s };
+	return {v.x * s, v.y * s};
 }
 
 struct Vector3
@@ -82,14 +86,19 @@ struct Vector3
 			float y;
 			float z;
 		};
+
 		float data[3];
 	};
 
 	Vector3() = default;
 
-	Vector3(float v) : x(v), y(v), z(v) {}
+	Vector3(float v) : x(v), y(v), z(v)
+	{
+	}
 
-	Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+	Vector3(float x, float y, float z) : x(x), y(y), z(z)
+	{
+	}
 
 	float& operator[](size_t index)
 	{
@@ -158,7 +167,10 @@ struct Vector3
 
 	RGB toRGB() const
 	{
-		return RGB{ static_cast<uint8_t>(std::clamp(x, 0.f, 1.f) * 255), static_cast<uint8_t>(std::clamp(y, 0.f, 1.f) * 255), static_cast<uint8_t>(std::clamp(z, 0.f, 1.f) * 255) };
+		return RGB{
+			static_cast<uint8_t>(std::clamp(x, 0.f, 1.f) * 255), static_cast<uint8_t>(std::clamp(y, 0.f, 1.f) * 255),
+			static_cast<uint8_t>(std::clamp(z, 0.f, 1.f) * 255)
+		};
 	}
 
 	std::string ToString() const
@@ -168,12 +180,12 @@ struct Vector3
 
 	Vector2 xy() const
 	{
-		return { x, y };
+		return {x, y};
 	}
 
 	Vector2 yz() const
 	{
-		return { y, z };
+		return {y, z};
 	}
 };
 
@@ -189,18 +201,18 @@ inline Vector3 operator -(const Vector3& a, const Vector3& b)
 
 inline Vector3 operator *(const Vector3& v, float s)
 {
-	return { v.x * s, v.y * s, v.z * s };
+	return {v.x * s, v.y * s, v.z * s};
 }
 
 inline Vector3 operator *(const Vector3& v, const Vector3& u)
 {
-	return { v.x * u.x, v.y * u.y, v.z * u.z };
+	return {v.x * u.x, v.y * u.y, v.z * u.z};
 }
 
 inline Vector3 operator /(const Vector3& v, float s)
 {
 	s = 1.f / s;
-	return { v.x * s, v.y * s, v.z * s };
+	return {v.x * s, v.y * s, v.z * s};
 }
 
 inline Vector3 Normalize(const Vector3& v)
@@ -241,7 +253,9 @@ struct Point3 : Vector3
 {
 	Point3() = default;
 
-	Point3(float a, float b, float c) : Vector3(a, b, c) {}
+	Point3(float a, float b, float c) : Vector3(a, b, c)
+	{
+	}
 
 	Point3& operator =(const Vector3& v)
 	{
@@ -292,7 +306,7 @@ struct Ray
 	}
 };
 
-struct HitInfo 
+struct HitInfo
 {
 	bool hit = false;
 	float t = std::numeric_limits<float>::max();
@@ -400,22 +414,32 @@ struct Triangle
 struct Matrix4
 {
 protected:
-
-	float		n[4][4];
+	float n[4][4];
 
 public:
-
 	Matrix4() = default;
 
 	Matrix4(float n00, float n01, float n02, float n03,
-		float n10, float n11, float n12, float n13,
-		float n20, float n21, float n22, float n23,
-		float n30, float n31, float n32, float n33)
+	        float n10, float n11, float n12, float n13,
+	        float n20, float n21, float n22, float n23,
+	        float n30, float n31, float n32, float n33)
 	{
-		n[0][0] = n00; n[0][1] = n10; n[0][2] = n20; n[0][3] = n30;
-		n[1][0] = n01; n[1][1] = n11; n[1][2] = n21; n[1][3] = n31;
-		n[2][0] = n02; n[2][1] = n12; n[2][2] = n22; n[2][3] = n32;
-		n[3][0] = n03; n[3][1] = n13; n[3][2] = n23; n[3][3] = n33;
+		n[0][0] = n00;
+		n[0][1] = n10;
+		n[0][2] = n20;
+		n[0][3] = n30;
+		n[1][0] = n01;
+		n[1][1] = n11;
+		n[1][2] = n21;
+		n[1][3] = n31;
+		n[2][0] = n02;
+		n[2][1] = n12;
+		n[2][2] = n22;
+		n[2][3] = n32;
+		n[3][0] = n03;
+		n[3][1] = n13;
+		n[3][2] = n23;
+		n[3][3] = n33;
 	}
 
 
@@ -447,12 +471,11 @@ public:
 
 static Matrix4 makeTranslation(Vector3 t)
 {
-
 	return {
 		1.f, 0.f, 0.f, t.x,
-					0.f, 1.f, 0.f, t.y,
-					0.f, 0.f, 1.f, t.z,
-					0.f, 0.f, 0.f, 1.f
+		0.f, 1.f, 0.f, t.y,
+		0.f, 0.f, 1.f, t.z,
+		0.f, 0.f, 0.f, 1.f
 	};
 }
 
@@ -463,8 +486,8 @@ static Matrix4 makeRotationX(float t)
 
 	return {
 		1.f, 0.f, 0.f, 0.f,
-		0.f,  c,   -s, 0.f,
-		0.f,  s,    c , 0.f,
+		0.f, c, -s, 0.f,
+		0.f, s, c, 0.f,
 		0.f, 0.f, 0.f, 1.f
 	};
 }
@@ -475,9 +498,9 @@ static Matrix4 makeRotationY(float t)
 	float s = sin(t);
 
 	return {
-		c,   0.f,  s, 0.f,
+		c, 0.f, s, 0.f,
 		0.f, 1.f, 0.f, 0.f,
-		-s,   0.f,  c  , 0.f,
+		-s, 0.f, c, 0.f,
 		0.f, 0.f, 0.f, 1.f
 	};
 }
@@ -488,14 +511,15 @@ static Matrix4 makeRotationZ(float t)
 	float s = sin(t);
 
 	return {
-		c,   -s,   0.f, 0.f,
-		s,    c,   0.f, 0.f,
+		c, -s, 0.f, 0.f,
+		s, c, 0.f, 0.f,
 		0.f, 0.f, 1.f, 0.f,
 		0.f, 0.f, 0.f, 1.f
 	};
 }
 
-static Matrix4 lookAtInverse(const Vector3& eye, const Vector3& center, const Vector3& up) {
+static Matrix4 lookAtInverse(const Vector3& eye, const Vector3& center, const Vector3& up)
+{
 	Vector3 f = Normalize(center - eye);
 	Vector3 s = Normalize(Cross(f, up));
 	Vector3 u = Cross(s, f);
@@ -504,25 +528,25 @@ static Matrix4 lookAtInverse(const Vector3& eye, const Vector3& center, const Ve
 		s.x, u.x, -f.x, eye.x,
 		s.y, u.y, -f.y, eye.y,
 		s.z, u.z, -f.z, eye.z,
-		0.f, 0.f,  0.f, 1.f
+		0.f, 0.f, 0.f, 1.f
 	};
 }
 
 inline Vector3 operator *(const Matrix4& H, const Vector3& v)
 {
 	return {
-		H(0,0) * v.x + H(0,1) * v.y + H(0,2) * v.z,
-		H(1,0) * v.x + H(1,1) * v.y + H(1,2) * v.z,
-		H(2,0) * v.x + H(2,1) * v.y + H(2,2) * v.z
+		H(0, 0) * v.x + H(0, 1) * v.y + H(0, 2) * v.z,
+		H(1, 0) * v.x + H(1, 1) * v.y + H(1, 2) * v.z,
+		H(2, 0) * v.x + H(2, 1) * v.y + H(2, 2) * v.z
 	};
 }
 
 inline Point3 operator *(const Matrix4& H, const Point3& p)
 {
 	return {
-		H(0,0) * p.x + H(0,1) * p.y + H(0,2) * p.z + H(0,3),
-		H(1,0) * p.x + H(1,1) * p.y + H(1,2) * p.z + H(1,3),
-		H(2,0) * p.x + H(2,1) * p.y + H(2,2) * p.z + H(2,3)
+		H(0, 0) * p.x + H(0, 1) * p.y + H(0, 2) * p.z + H(0, 3),
+		H(1, 0) * p.x + H(1, 1) * p.y + H(1, 2) * p.z + H(1, 3),
+		H(2, 0) * p.x + H(2, 1) * p.y + H(2, 2) * p.z + H(2, 3)
 	};
 }
 
@@ -543,16 +567,17 @@ inline Matrix4 operator*(const Matrix4& A, const Matrix4& B)
 	return result;
 }
 
-struct Range {
+struct Range
+{
 	uint32_t start;
 	uint32_t end;
 
 	uint32_t count() const { return end - start; }
 };
 
-inline Vector3 randomInHemisphereCosine(const Vector3& normal, const Vector2& rnd) {
-
-	float theta = acos(sqrt(1.0f - rnd.x));  // Theta follows a cosine distribution
+inline Vector3 randomInHemisphereCosine(const Vector3& normal, const Vector2& rnd)
+{
+	float theta = acos(sqrt(1.0f - rnd.x)); // Theta follows a cosine distribution
 	float phi = 2.0f * PI * rnd.y;
 
 	float x = sin(theta) * cos(phi);
@@ -562,7 +587,8 @@ inline Vector3 randomInHemisphereCosine(const Vector3& normal, const Vector2& rn
 	Vector3 randomDirection(x, y, z);
 
 	// Ensure it's in the same hemisphere as the normal
-	if (Dot(randomDirection, normal) < 0.0f) {
+	if (Dot(randomDirection, normal) < 0.0f)
+	{
 		randomDirection = -randomDirection;
 	}
 

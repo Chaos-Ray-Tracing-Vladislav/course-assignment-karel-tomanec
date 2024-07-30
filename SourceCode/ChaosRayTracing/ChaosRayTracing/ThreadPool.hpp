@@ -12,7 +12,8 @@ class ThreadPool
 public:
 	ThreadPool(size_t numThreads = std::jthread::hardware_concurrency())
 	{
-		for (size_t i = 0; i < numThreads; ++i) {
+		for (size_t i = 0; i < numThreads; ++i)
+		{
 			workers.emplace_back([this](std::stop_token stop_token) { WorkerThread(stop_token); });
 		}
 	}
@@ -29,15 +30,18 @@ public:
 
 		condition.notify_all();
 
-		for (auto& worker : workers) {
-			if (worker.joinable()) {
+		for (auto& worker : workers)
+		{
+			if (worker.joinable())
+			{
 				worker.join();
 			}
 		}
 	}
 
-	template<class F, class... Args>
-	auto Enqueue(F&& f, Args&&... args) -> std::future<typename std::invoke_result_t<F, Args...>> {
+	template <class F, class... Args>
+	auto Enqueue(F&& f, Args&&... args) -> std::future<typename std::invoke_result_t<F, Args...>>
+	{
 		using return_type = typename std::invoke_result_t<F, Args...>;
 
 		auto task = std::make_shared<std::packaged_task<return_type()>>(
@@ -58,9 +62,10 @@ public:
 	}
 
 private:
-
-	void WorkerThread(std::stop_token stop_token) {
-		while (true) {
+	void WorkerThread(std::stop_token stop_token)
+	{
+		while (true)
+		{
 			std::function<void()> task;
 			{
 				std::unique_lock lock(queueMutex);
@@ -73,12 +78,12 @@ private:
 					tasks.pop();
 				}
 			}
-			if(task)
+			if (task)
 				task();
 		}
 	}
 
-	std::vector <std::jthread> workers;
+	std::vector<std::jthread> workers;
 	std::queue<std::function<void()>> tasks;
 	std::mutex queueMutex;
 	std::condition_variable_any condition;

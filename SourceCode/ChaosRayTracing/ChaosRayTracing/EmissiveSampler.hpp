@@ -10,7 +10,6 @@
 class EmissiveSampler
 {
 public:
-
 	std::optional<EmissiveLightSample> sample(const Vector3 posW, const Vector3& rnd) const
 	{
 		if (emissiveTriangles.empty())
@@ -28,7 +27,8 @@ public:
 
 	float evalPdf(size_t emissiveTriangleIndex, const Vector3& posW, const Vector3& sampledPosition) const
 	{
-		return emissiveTriangles[emissiveTriangleIndex].pdf(posW, sampledPosition) / static_cast<float>(emissiveTriangles.size());
+		return emissiveTriangles[emissiveTriangleIndex].pdf(posW, sampledPosition) / static_cast<float>(
+			emissiveTriangles.size());
 	}
 
 	std::vector<EmissiveTriangle> emissiveTriangles;
