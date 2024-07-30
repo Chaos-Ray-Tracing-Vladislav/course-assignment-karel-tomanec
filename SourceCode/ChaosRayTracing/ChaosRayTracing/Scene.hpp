@@ -13,73 +13,81 @@
 #include <optional>
 #include <iostream>
 
-
-class Scene
+class Scene final
 {
 public:
-	// Move constructor
-	Scene(Scene&& other) noexcept
-		: textures(std::move(other.textures))
-	{
-	}
 
-	// Move assignment operator
-	Scene& operator=(Scene&& other) noexcept
-	{
-		if (this != &other)
-		{
-			textures = std::move(other.textures);
-		}
-		return *this;
-	}
+    Scene(const std::string& fileName)
+    {
+        SceneParser sceneParser(*this);
+        sceneParser.parseSceneFile(fileName);
+        std::cout << fileName << " parsed.\n";
+        bvh = BVH(triangles);
+        std::cout << fileName << " BVH built.\n";
+    }
 
-	// Disable copy constructor and copy assignment operator
-	Scene(const Scene&) = delete;
-	Scene& operator=(const Scene&) = delete;
+    Scene(Scene&& other) noexcept
+        : camera(std::move(other.camera)),
+        triangles(std::move(other.triangles)),
+        bvh(std::move(other.bvh)),
+        materials(std::move(other.materials)),
+        textures(std::move(other.textures)),
+        lights(std::move(other.lights)),
+        emissiveSampler(std::move(other.emissiveSampler)),
+        settings(std::move(other.settings))
+    {
+    }
 
-	struct ImageSettings
-	{
-		uint32_t width;
-		uint32_t height;
-		uint32_t bucketSize = 24;
-	};
+    Scene& operator=(Scene&& other) noexcept
+    {
+        if (this != &other)
+        {
+            camera = std::move(other.camera);
+            triangles = std::move(other.triangles);
+            bvh = std::move(other.bvh);
+            materials = std::move(other.materials);
+            textures = std::move(other.textures);
+            lights = std::move(other.lights);
+            emissiveSampler = std::move(other.emissiveSampler);
+            settings = std::move(other.settings);
+        }
+        return *this;
+    }
 
-	struct Settings
-	{
-		std::string sceneName;
-		Vector3 backgroundColor;
-		ImageSettings imageSettings;
-	};
+    Scene(const Scene&) = delete;
+    Scene& operator=(const Scene&) = delete;
 
-	Scene(const std::string& fileName)
-	{
-		SceneParser sceneParser(*this);
-		sceneParser.parseSceneFile(fileName);
-		std::cout << fileName << " parsed.\n";
-		bvh = BVH(triangles);
-		std::cout << fileName << " BVH built.\n";
-	}
+    struct ImageSettings
+    {
+        uint32_t width;
+        uint32_t height;
+        uint32_t bucketSize = 24;
+    };
 
-	HitInfo closestHit(Ray& ray) const
-	{
-		return bvh.closestHit(triangles, materials, ray);
-	}
+    struct Settings
+    {
+        std::string sceneName;
+        Vector3 backgroundColor;
+        ImageSettings imageSettings;
+    };
 
-	bool anyHit(Ray& ray) const
-	{
-		return bvh.anyHit(triangles, materials, ray);
-	}
 
-	Camera camera;
+    HitInfo closestHit(Ray& ray) const
+    {
+        return bvh.closestHit(triangles, materials, ray);
+    }
 
-	std::vector<Triangle> triangles;
-	BVH bvh;
+    bool anyHit(Ray& ray) const
+    {
+        return bvh.anyHit(triangles, materials, ray);
+    }
 
-	std::vector<Material> materials;
-	std::map<std::string, std::shared_ptr<const Texture>> textures;
-
-	std::vector<Light> lights;
-	EmissiveSampler emissiveSampler;
-
-	Settings settings;
+    Camera camera;
+    std::vector<Triangle> triangles;
+    BVH bvh;
+    std::vector<Material> materials;
+    std::map<std::string, std::shared_ptr<const Texture>> textures;
+    std::vector<Light> lights;
+    EmissiveSampler emissiveSampler;
+    Settings settings;
 };

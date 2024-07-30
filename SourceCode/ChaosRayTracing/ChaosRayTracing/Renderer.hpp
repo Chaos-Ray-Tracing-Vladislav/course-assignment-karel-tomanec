@@ -12,7 +12,7 @@
 
 #include "Sampling.hpp"
 
-class Renderer
+class Renderer final
 {
 public:
 	Renderer(Scene& scene) : scene(scene)
