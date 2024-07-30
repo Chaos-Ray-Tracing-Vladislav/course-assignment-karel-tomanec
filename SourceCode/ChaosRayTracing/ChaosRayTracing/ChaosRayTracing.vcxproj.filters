@@ -65,5 +65,8 @@
     <ClInclude Include="Light.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Image.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

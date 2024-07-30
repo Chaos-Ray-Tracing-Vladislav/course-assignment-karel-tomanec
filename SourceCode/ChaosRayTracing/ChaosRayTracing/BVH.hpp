@@ -166,7 +166,7 @@ private:
 						{
 							return tri.Centroid()[splitAxis] < midVal;
 						});
-					mid = std::distance(triangles.begin(), midIt);
+					mid = static_cast<uint32_t>(std::distance(triangles.begin(), midIt));
 					if (midIt != triangles.begin() + range.start && midIt != triangles.begin() + range.end)
 						break;
 				}

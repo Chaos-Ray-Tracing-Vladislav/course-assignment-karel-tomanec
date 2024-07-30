@@ -9,14 +9,16 @@
 #include <random>
 #include <stdexcept>
 
+constexpr float PI = std::numbers::pi_v<float>;
+
 constexpr float DegToRad(float degrees)
 {
-	return degrees * (std::numbers::pi_v<float> / 180.f);
+	return degrees * (PI / 180.f);
 }
 
 constexpr float RadToDeg(float radians)
 {
-	return radians * (180.f / std::numbers::pi_v<float>);
+	return radians * (180.f / PI);
 }
 
 struct RGB 

@@ -4,36 +4,11 @@
 
 #include "PPMWriter.hpp"
 #include "Scene.hpp"
+#include "Image.hpp"
+#include "ThreadPool.hpp"
 
 #include <thread>
 #include <utility>
-#include "ThreadPool.hpp"
-
-class Image
-{
-public:
-    Image(uint32_t width, uint32_t height) : width(width), height(height)
-    {
-        pixels.resize(width * height);
-    }
-
-    void SetPixel(uint32_t x, uint32_t y, const RGB& color)
-    {
-        pixels[y * width + x] = color;
-    }
-
-    const RGB& GetPixel(uint32_t x, uint32_t y) const
-    {
-        return pixels[y * width + x];
-    }
-
-    uint32_t GetWidth() const { return width; }
-    uint32_t GetHeight() const { return height; }
-
-private:
-    uint32_t width, height;
-    std::vector<RGB> pixels;
-};
 
 class Renderer
 {
@@ -50,7 +25,7 @@ public:
         for(uint32_t frame = 0; frame < frameCount; frame++)
         {
             // Set camera
-            float phi = 2.0f * std::numbers::pi * static_cast<float>(frame) / frameCount;
+            float phi = 2.f * PI * static_cast<float>(frame) / frameCount;
             float radius = 2.2f;
             Vector3 cameraPosition = Vector3(radius * sinf(phi), 1.f, radius * cosf(phi));
             Vector3 center(0.f, 1.f, 0.f);
@@ -191,26 +166,26 @@ protected:
                         float nDotL = std::max(0.f, Dot(normal, dirToLight));
 
                         float lightPdf = lightSample.pdf;
-                        float brdfPdf = std::max(0.f, Dot(hitInfo.normal, dirToLight)) / std::numbers::pi_v<float>;
+                        float brdfPdf = std::max(0.f, Dot(hitInfo.normal, dirToLight)) / PI;
 
                         // Multiple importance sampling (MIS) weight
                         float misWeight = PowerHeuristic(1, lightPdf, 1, brdfPdf);
 
                         if(lightPdf > 0.f)
-                            L += misWeight * (albedo / std::numbers::pi_v<float>) * nDotL * lightSample.Le / lightPdf;
+                            L += misWeight * (albedo / PI) * nDotL * lightSample.Le / lightPdf;
                     }
                 }
 
                 Vector3 randomDirection = RandomInHemisphere(hitInfo.normal);
                 Ray nextRay{ offsetOrigin, randomDirection };
 
-                float pdf = std::max(0.f, Dot(hitInfo.normal, randomDirection)) / std::numbers::pi_v<float>;
+                float pdf = std::max(0.f, Dot(hitInfo.normal, randomDirection)) / PI;
 
                 Vector3 indirectLighting = TraceRay(nextRay, true, pdf, gen, dis, depth + 1);
                 float nDotL = std::max(0.f, Dot(normal, randomDirection));
 
                 if(pdf > 0.f)
-					L += (albedo / std::numbers::pi_v<float>) * nDotL * indirectLighting / pdf;
+					L += (albedo / PI) * nDotL * indirectLighting / pdf;
             }
             else if (material.type == Material::Type::EMISSIVE)
             {
@@ -306,5 +281,6 @@ protected:
     static constexpr uint32_t maxColorComponent = 255;
     static constexpr uint32_t sampleCount = 64;
     static constexpr uint32_t frameCount = 1;
+
     Scene& scene;
 };
