@@ -55,8 +55,7 @@ public:
 							{
 								Vector3 color{0.f};
 
-
-								RandomSampler randomSampler;
+								Sampling::RandomSampler randomSampler;
 
 								for (uint32_t sample = 0; sample < sampleCount; sample++)
 								{
@@ -104,14 +103,19 @@ private:
 
 		Ray ray{origin, direction};
 
-
-		RandomSampler randomSampler;
-		Vector3 L = traceRay(ray, false, 1.f, randomSampler, 0);
+		Sampling::RandomSampler randomSampler;
+		Vector3 L = traceRay(ray, {}, randomSampler, 0);
 
 		return L;
 	}
 
-	Vector3 traceRay(Ray& ray, bool lightSampledByNEE, float prevBounceBrdfPdf, RandomSampler& rnd, uint32_t depth)
+	struct PrevBounceInfo
+	{
+		bool lightSampledByNEE = false;
+		float bsdfPdf = 1.f;
+	};
+
+	Vector3 traceRay(Ray& ray, PrevBounceInfo prevBounceInfo, Sampling::RandomSampler& rnd, uint32_t depth)
 	{
 		Vector3 L{0.f};
 		if (depth > maxDepth)
@@ -131,9 +135,23 @@ private:
 			if (material.type == Material::Type::DIFFUSE || material.type == Material::Type::CONSTANT)
 			{
 				Vector3 albedo = material.getAlbedo(hitInfo.barycentrics, triangle.getUVs(hitInfo.barycentrics));
-				Vector3 brdf = albedo / PI;
+				Vector3 bsdf = albedo / PI;
 
-				// Sample light
+				// Iterate over explicit lights
+				for (const auto& light : scene.lights)
+				{
+					Vector3 dirToLight = Normalize(light.position - offsetOrigin);
+					float distanceToLight = (light.position - offsetOrigin).magnitude();
+					Ray shadowRay{ offsetOrigin, dirToLight, distanceToLight};
+					if (!scene.anyHit(shadowRay))
+					{
+						float attenuation = 1.0f / (distanceToLight * distanceToLight);
+						float nDotL = std::max(0.f, Dot(normal, dirToLight));
+						L += albedo * nDotL * attenuation * light.intensity;
+					}
+				}
+
+				// Sample emissive geometry
 				std::optional<EmissiveLightSample> lightSampleOpt = scene.emissiveSampler.sample(
 					offsetOrigin, rnd.next3D());
 				if (lightSampleOpt.has_value())
@@ -147,13 +165,13 @@ private:
 						float nDotL = std::max(0.f, Dot(normal, dirToLight));
 
 						float lightPdf = lightSample.pdf;
-						float brdfPdf = std::max(0.f, Dot(hitInfo.normal, dirToLight)) / PI;
+						float bsdfPdf = std::max(0.f, Dot(hitInfo.normal, dirToLight)) / PI;
 
 						// Multiple importance sampling (MIS) weight
-						float misWeight = powerHeuristic(lightPdf, brdfPdf);
+						float misWeight = Sampling::powerHeuristic(lightPdf, bsdfPdf);
 
 						if (lightPdf > 0.f)
-							L += misWeight * brdf * nDotL * lightSample.Le / lightPdf;
+							L += misWeight * bsdf * nDotL * lightSample.Le / lightPdf;
 					}
 				}
 
@@ -162,20 +180,20 @@ private:
 
 				float pdf = std::max(0.f, Dot(hitInfo.normal, randomDirection)) / PI;
 
-				Vector3 indirectLighting = traceRay(nextRay, true, pdf, rnd, depth + 1);
+				Vector3 indirectLighting = traceRay(nextRay, { true, pdf }, rnd, depth + 1);
 				float nDotL = std::max(0.f, Dot(normal, randomDirection));
 
 				if (pdf > 0.f)
-					L += brdf * nDotL * indirectLighting / pdf;
+					L += bsdf * nDotL * indirectLighting / pdf;
 			}
 			else if (material.type == Material::Type::EMISSIVE)
 			{
 				float misWeight = 1.f;
-				if (lightSampledByNEE)
+				if (prevBounceInfo.lightSampledByNEE)
 				{
 					assert(triangle.emissiveIndex != -1);
 					float lightPdf = scene.emissiveSampler.evalPdf(triangle.emissiveIndex, ray.origin, hitInfo.point);
-					misWeight = powerHeuristic(prevBounceBrdfPdf, lightPdf);
+					misWeight = Sampling::powerHeuristic(prevBounceInfo.bsdfPdf, lightPdf);
 				}
 				L += material.emission * misWeight;
 			}
@@ -183,8 +201,8 @@ private:
 			{
 				Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
 				Ray reflectionRay{offsetOrigin, reflectionDir};
-				L += material.getAlbedo(hitInfo.barycentrics, triangle.getUVs(hitInfo.barycentrics)) * traceRay(
-					reflectionRay, false, 1.f, rnd, depth + 1);
+				Vector3 albedo = material.getAlbedo(hitInfo.barycentrics, triangle.getUVs(hitInfo.barycentrics));
+				L += albedo * traceRay(reflectionRay, {}, rnd, depth + 1);
 			}
 			else if (material.type == Material::Type::REFRACTIVE)
 			{
@@ -206,7 +224,7 @@ private:
 					// Total internal reflection case
 					Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
 					Ray reflectionRay{offsetOrigin, reflectionDir};
-					L += traceRay(reflectionRay, false, 1.f, rnd, depth + 1);
+					L += traceRay(reflectionRay, {}, rnd, depth + 1);
 				}
 				else
 				{
@@ -217,7 +235,7 @@ private:
 						                                                 ? hitInfo.normal
 						                                                 : -hitInfo.normal);
 					Ray refractionRay{offsetOriginRefraction, wt};
-					Vector3 refractionL = traceRay(refractionRay, false, 1.f, rnd, depth + 1);
+					Vector3 refractionL = traceRay(refractionRay, {}, rnd, depth + 1);
 
 					Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
 					Vector3 offsetOriginReflection = OffsetRayOrigin(hitInfo.point,
@@ -225,7 +243,7 @@ private:
 						                                                 ? -hitInfo.normal
 						                                                 : hitInfo.normal);
 					Ray reflectionRay{offsetOriginReflection, reflectionDir};
-					Vector3 reflectionL = traceRay(reflectionRay, false, 1.f, rnd, depth + 1);
+					Vector3 reflectionL = traceRay(reflectionRay, {}, rnd, depth + 1);
 
 					float fresnel = 0.5f * std::powf(1.f + Dot(ray.directionN, normal), 5);
 
