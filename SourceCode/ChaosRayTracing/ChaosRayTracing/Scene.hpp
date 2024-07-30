@@ -9,7 +9,9 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <optional>
 
+#include "EmissiveSampler.hpp"
 
 class Scene
 {
@@ -65,10 +67,15 @@ public:
 	}
 
 	Camera camera;
+
 	std::vector<Triangle> triangles;
+	BVH bvh;
+
 	std::vector<Material> materials;
 	std::map<std::string, std::shared_ptr<const Texture>> textures;
+
 	std::vector<Light> lights;
-	BVH bvh;
+	EmissiveSampler emissiveSampler;
+
 	Settings settings;
 };

@@ -166,7 +166,7 @@ private:
 						{
 							return tri.Centroid()[splitAxis] < midVal;
 						});
-					mid = std::distance(triangles.begin(), midIt);
+					mid = static_cast<uint32_t>(std::distance(triangles.begin(), midIt));
 					if (midIt != triangles.begin() + range.start && midIt != triangles.begin() + range.end)
 						break;
 				}
@@ -243,5 +243,5 @@ private:
 	std::vector<BVHNode> nodes;
 	static constexpr uint32_t maxDepth = 10;
 	static constexpr uint32_t maxTriangleCountPerLeaf = 4;
-	static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::SAH;
+	static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::Middle;
 };

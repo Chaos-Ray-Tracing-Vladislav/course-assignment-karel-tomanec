@@ -148,86 +148,14 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 			const Value& intensityValue = it->FindMember(kIntensityStr.c_str())->value;
 			assert(!intensityValue.IsNull() && intensityValue.IsInt());
 			light.intensity = static_cast<float>(intensityValue.GetInt()) * 0.1f; // lights seems to be too bright
+			if (light.intensity == 0.f)
+				continue;
 
 			const Value& positionVal = it->FindMember(kPositionStr.c_str())->value;
 			assert(!positionVal.IsNull() && positionVal.IsArray());
 			light.position = loadVector(positionVal.GetArray());
 
 			scene.lights.push_back(light);
-		}
-	}
-
-	const Value& objectsValue = doc.FindMember(kObjectsStr.c_str())->value;
-	if(!objectsValue.IsNull() && objectsValue.IsArray()) 
-	{
-		for(Value::ConstValueIterator it = objectsValue.Begin(); it != objectsValue.End(); ++it)
-		{
-			const Value& verticesValue = it->FindMember(kVerticesStr.c_str())->value;
-			assert(!verticesValue.IsNull() && verticesValue.IsArray());
-			std::vector<Vector3> vertices = loadVertices(verticesValue.GetArray());
-
-			std::vector<Vector2> uvs;
-			if (it->HasMember(kUVsStr.c_str()))
-			{
-				const Value& uvsValue = it->FindMember(kUVsStr.c_str())->value;
-				assert(!uvsValue.IsNull() && uvsValue.IsArray());
-				uvs = loadUVs(uvsValue.GetArray());
-			}
-
-			const Value& trianglesValue = it->FindMember(kTrianglesStr.c_str())->value;
-			assert(!trianglesValue.IsNull() && trianglesValue.IsArray());
-			std::vector<uint32_t> indices = loadIndices(trianglesValue.GetArray());
-
-			// Compute vertex normals
-			std::vector<Vector3> vertexNormals(vertices.size(), { 0.0f, 0.0f, 0.0f });
-			for (uint32_t i = 0; i < indices.size(); i += 3)
-			{
-				const auto& i0 = indices[i];
-				const auto& i1 = indices[i + 1];
-				const auto& i2 = indices[i + 2];
-				const auto& v0 = vertices[i0];
-				const auto& v1 = vertices[i1];
-				const auto& v2 = vertices[i2];
-				Vector3 faceNormal = Normalize(Cross(v1 - v0, v2 - v0));
-
-				vertexNormals[i0] += faceNormal;
-				vertexNormals[i1] += faceNormal;
-				vertexNormals[i2] += faceNormal;
-			}
-			// Normalize
-			for (auto& vertexNormal : vertexNormals)
-				vertexNormal = Normalize(vertexNormal);
-
-			// Get material index
-			const Value& materialIndexValue = it->FindMember(kMaterialIndexStr.c_str())->value;
-			assert(!materialIndexValue.IsNull() && materialIndexValue.IsInt());
-
-			scene.triangles.reserve(scene.triangles.size() + indices.size() / 3);
-			for (uint32_t i = 0; i < indices.size(); i += 3)
-			{
-				const auto& i0 = indices[i];
-				const auto& i1 = indices[i + 1];
-				const auto& i2 = indices[i + 2];
-
-				const auto& v0 = vertices[i0];
-				const auto& v1 = vertices[i1];
-				const auto& v2 = vertices[i2];
-
-				const auto& n0 = vertexNormals[i0];
-				const auto& n1 = vertexNormals[i1];
-				const auto& n2 = vertexNormals[i2];
-
-				const auto& uv0 = !uvs.empty() ? uvs[i0] : 1.f;
-				const auto& uv1 = !uvs.empty() ? uvs[i1] : 1.f;
-				const auto& uv2 = !uvs.empty() ? uvs[i2] : 1.f;
-
-				scene.triangles.emplace_back(
-					Vertex{ v0, n0, uv0 },
-					Vertex{ v1, n1, uv1 },
-					Vertex{ v2, n2, uv2 },
-					materialIndexValue.GetInt()
-				);
-			}
 		}
 	}
 
@@ -363,4 +291,88 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 			scene.materials.push_back(material);
 		}
 	}
+
+	const Value& objectsValue = doc.FindMember(kObjectsStr.c_str())->value;
+	if(!objectsValue.IsNull() && objectsValue.IsArray()) 
+	{
+		for(Value::ConstValueIterator it = objectsValue.Begin(); it != objectsValue.End(); ++it)
+		{
+			const Value& verticesValue = it->FindMember(kVerticesStr.c_str())->value;
+			assert(!verticesValue.IsNull() && verticesValue.IsArray());
+			std::vector<Vector3> vertices = loadVertices(verticesValue.GetArray());
+
+			std::vector<Vector2> uvs;
+			if (it->HasMember(kUVsStr.c_str()))
+			{
+				const Value& uvsValue = it->FindMember(kUVsStr.c_str())->value;
+				assert(!uvsValue.IsNull() && uvsValue.IsArray());
+				uvs = loadUVs(uvsValue.GetArray());
+			}
+
+			const Value& trianglesValue = it->FindMember(kTrianglesStr.c_str())->value;
+			assert(!trianglesValue.IsNull() && trianglesValue.IsArray());
+			std::vector<uint32_t> indices = loadIndices(trianglesValue.GetArray());
+
+			// Compute vertex normals
+			std::vector<Vector3> vertexNormals(vertices.size(), { 0.0f, 0.0f, 0.0f });
+			for (uint32_t i = 0; i < indices.size(); i += 3)
+			{
+				const auto& i0 = indices[i];
+				const auto& i1 = indices[i + 1];
+				const auto& i2 = indices[i + 2];
+				const auto& v0 = vertices[i0];
+				const auto& v1 = vertices[i1];
+				const auto& v2 = vertices[i2];
+				Vector3 faceNormal = Normalize(Cross(v1 - v0, v2 - v0));
+
+				vertexNormals[i0] += faceNormal;
+				vertexNormals[i1] += faceNormal;
+				vertexNormals[i2] += faceNormal;
+			}
+			// Normalize
+			for (auto& vertexNormal : vertexNormals)
+				vertexNormal = Normalize(vertexNormal);
+
+			// Get material index
+			const Value& materialIndexValue = it->FindMember(kMaterialIndexStr.c_str())->value;
+			assert(!materialIndexValue.IsNull() && materialIndexValue.IsInt());
+			uint32_t materialIndex = materialIndexValue.GetInt();
+			const auto& material = scene.materials[materialIndex];
+			bool isEmissive = material.type == Material::Type::EMISSIVE;
+
+			scene.triangles.reserve(scene.triangles.size() + indices.size() / 3);
+			for (uint32_t i = 0; i < indices.size(); i += 3)
+			{
+				const auto& i0 = indices[i];
+				const auto& i1 = indices[i + 1];
+				const auto& i2 = indices[i + 2];
+
+				const auto& v0 = vertices[i0];
+				const auto& v1 = vertices[i1];
+				const auto& v2 = vertices[i2];
+
+				const auto& n0 = vertexNormals[i0];
+				const auto& n1 = vertexNormals[i1];
+				const auto& n2 = vertexNormals[i2];
+
+				const auto& uv0 = !uvs.empty() ? uvs[i0] : 1.f;
+				const auto& uv1 = !uvs.empty() ? uvs[i1] : 1.f;
+				const auto& uv2 = !uvs.empty() ? uvs[i2] : 1.f;
+
+				scene.triangles.emplace_back(
+					Vertex{ v0, n0, uv0 },
+					Vertex{ v1, n1, uv1 },
+					Vertex{ v2, n2, uv2 },
+					materialIndex,
+					isEmissive ? scene.emissiveSampler.emissiveTriangles.size() : -1
+				);
+
+				if(isEmissive)
+				{
+					scene.emissiveSampler.emissiveTriangles.emplace_back(scene.triangles.back(), material.emission);
+				}
+			}
+		}
+	}
+
 }

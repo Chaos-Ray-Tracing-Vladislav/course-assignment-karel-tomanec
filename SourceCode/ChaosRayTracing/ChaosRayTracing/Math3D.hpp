@@ -9,14 +9,16 @@
 #include <random>
 #include <stdexcept>
 
+constexpr float PI = std::numbers::pi_v<float>;
+
 constexpr float DegToRad(float degrees)
 {
-	return degrees * (std::numbers::pi_v<float> / 180.f);
+	return degrees * (PI / 180.f);
 }
 
 constexpr float RadToDeg(float radians)
 {
-	return radians * (180.f / std::numbers::pi_v<float>);
+	return radians * (180.f / PI);
 }
 
 struct RGB 
@@ -164,6 +166,16 @@ struct Vector3
 	{
 		return "(" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ")";
 	}
+
+	Vector2 xy() const
+	{
+		return { x, y };
+	}
+
+	Vector2 yz() const
+	{
+		return { y, z };
+	}
 };
 
 inline Vector3 operator +(const Vector3& a, const Vector3& b)
@@ -309,8 +321,10 @@ struct Triangle
 
 	Vector3 faceNormal;
 
-	Triangle(const Vertex& a, const Vertex& b, const Vertex& c, uint32_t materialIndex)
-		: v0(a), v1(b), v2(c), materialIndex(materialIndex)
+	int32_t emissiveIndex = -1;
+
+	Triangle(const Vertex& a, const Vertex& b, const Vertex& c, uint32_t materialIndex, int32_t emissiveIndex)
+		: v0(a), v1(b), v2(c), materialIndex(materialIndex), emissiveIndex(emissiveIndex)
 	{
 		this->faceNormal = Normalize(Cross(v1.position - v0.position, v2.position - v0.position));
 	}
@@ -525,18 +539,19 @@ struct Range {
 	uint32_t count() const { return end - start; }
 };
 
-inline Vector3 RandomInHemisphere(const Vector3& normal) {
+inline Vector3 RandomInHemisphereCosine(const Vector3& normal) {
 	static thread_local std::default_random_engine generator;
 	static thread_local std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
 
 	float u = distribution(generator);
 	float v = distribution(generator);
 
-	float theta = 2.0f * std::numbers::pi_v<float> * u;
-	float phi = acos(2.0f * v - 1.0f);
-	float x = sin(phi) * cos(theta);
-	float y = sin(phi) * sin(theta);
-	float z = cos(phi);
+	float theta = acos(sqrt(1.0f - u));  // Theta follows a cosine distribution
+	float phi = 2.0f * std::numbers::pi_v<float> * v;
+
+	float x = sin(theta) * cos(phi);
+	float y = sin(theta) * sin(phi);
+	float z = cos(theta);
 
 	Vector3 randomDirection(x, y, z);
 
