@@ -157,7 +157,7 @@ protected:
         writer << buffer;
     }
 
-    Vector3 TraceRay(Ray& ray, std::mt19937& gen, std::uniform_real_distribution<float>& dis, uint32_t depth = 0)
+    Vector3 TraceRay(Ray& ray, bool lightSampledByNEE, float prevBounceBrdfPdf, std::mt19937& gen, std::uniform_real_distribution<float>& dis, uint32_t depth = 0)
     {
         Vector3 L{ 0.f };
         if (depth > maxDepth)
@@ -191,10 +191,10 @@ protected:
                         float nDotL = std::max(0.f, Dot(normal, dirToLight));
 
                         float lightPdf = lightSample.pdf;
-                        //float brdfPdf = 1.f / (2.f * std::numbers::pi_v<float>);
+                        float brdfPdf = std::max(0.f, Dot(hitInfo.normal, dirToLight)) / std::numbers::pi_v<float>;
 
                         // Multiple importance sampling (MIS) weight
-                        float misWeight = 1.f;// PowerHeuristic(1, lightPdf, 1, brdfPdf);
+                        float misWeight = PowerHeuristic(1, lightPdf, 1, brdfPdf);
 
                         if(lightPdf > 0.f)
                             L += misWeight * (albedo / std::numbers::pi_v<float>) * nDotL * lightSample.Le / lightPdf;
@@ -206,7 +206,7 @@ protected:
 
                 float pdf = std::max(0.f, Dot(hitInfo.normal, randomDirection)) / std::numbers::pi_v<float>;
 
-                Vector3 indirectLighting = TraceRay(nextRay, gen, dis, depth + 1);
+                Vector3 indirectLighting = TraceRay(nextRay, true, pdf, gen, dis, depth + 1);
                 float nDotL = std::max(0.f, Dot(normal, randomDirection));
 
                 if(pdf > 0.f)
@@ -214,14 +214,20 @@ protected:
             }
             else if (material.type == Material::Type::EMISSIVE)
             {
-                if(depth == 0)
-            		L += material.emission;
+                float misWeight = 1.f;
+                if (lightSampledByNEE)
+                {
+                    assert(triangle.emissiveIndex != -1);
+                    float lightPdf = scene.emissiveTriangles[triangle.emissiveIndex].pdf(ray.origin, hitInfo.point);
+                    misWeight = PowerHeuristic(1, prevBounceBrdfPdf, 1, lightPdf * 0.25f);
+                }
+            	L += material.emission * misWeight;
             }
             else if (material.type == Material::Type::REFLECTIVE)
             {
                 Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                 Ray reflectionRay{ offsetOrigin,  reflectionDir };
-                L += material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics)) * TraceRay(reflectionRay, gen, dis, depth + 1);
+                L += material.GetAlbedo(hitInfo.barycentrics, triangle.GetUVs(hitInfo.barycentrics)) * TraceRay(reflectionRay, false, 1.f, gen, dis, depth + 1);
             }
             else if (material.type == Material::Type::REFRACTIVE)
             {
@@ -243,7 +249,7 @@ protected:
                     // Total internal reflection case
                     Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                     Ray reflectionRay{ offsetOrigin,  reflectionDir };
-                    L += TraceRay(reflectionRay, gen, dis, depth + 1);
+                    L += TraceRay(reflectionRay, false, 1.f, gen, dis, depth + 1);
                 }
                 else
                 {
@@ -251,12 +257,12 @@ protected:
                     Vector3 wt = -wi / eta + (cosThetaI / eta - cosThetaT) * normal;
                     Vector3 offsetOriginRefraction = OffsetRayOrigin(hitInfo.point, flipOrientation ? hitInfo.normal : -hitInfo.normal);
                     Ray refractionRay{ offsetOriginRefraction, wt };
-                    Vector3 refractionL = TraceRay(refractionRay, gen, dis, depth + 1);
+                    Vector3 refractionL = TraceRay(refractionRay, false, 1.f, gen, dis, depth + 1);
 
                     Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
                     Vector3 offsetOriginReflection = OffsetRayOrigin(hitInfo.point, flipOrientation ? -hitInfo.normal : hitInfo.normal);
                     Ray reflectionRay{ offsetOriginReflection,  reflectionDir };
-                    Vector3 reflectionL = TraceRay(reflectionRay, gen, dis, depth + 1);
+                    Vector3 reflectionL = TraceRay(reflectionRay, false, 1.f, gen, dis, depth + 1);
 
                     float fresnel = 0.5f * std::powf(1.f + Dot(ray.directionN, normal), 5);
 
@@ -292,11 +298,11 @@ protected:
         std::mt19937 gen(rd());
         std::uniform_real_distribution<float> dis(0.f, 1.f);
 
-        Vector3 L = TraceRay(ray, gen, dis);
+        Vector3 L = TraceRay(ray, false, 1.f, gen, dis);
         return L;
     }
 
-    static constexpr uint32_t maxDepth = 6;
+    static constexpr uint32_t maxDepth = 5;
     static constexpr uint32_t maxColorComponent = 255;
     static constexpr uint32_t sampleCount = 64;
     static constexpr uint32_t frameCount = 1;

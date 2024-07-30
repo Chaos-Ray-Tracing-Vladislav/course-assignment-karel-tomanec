@@ -61,4 +61,17 @@ struct EmissiveTriangle
         sample.pdf = pdf;
         return sample;
     }
+
+    float pdf(const Vector3& posW, const Vector3 sampledPosition)
+    {
+        Vector3 toLight = sampledPosition - posW;
+        const float distSqr = std::max(FLT_MIN, Dot(toLight, toLight));
+
+        float area = triangle.Area();
+
+        float cosTheta = Dot(triangle.faceNormal, -toLight);
+
+
+        return distSqr / (cosTheta * area);
+    }
 };

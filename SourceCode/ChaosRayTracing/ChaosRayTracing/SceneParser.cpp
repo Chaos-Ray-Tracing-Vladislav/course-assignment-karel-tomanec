@@ -363,7 +363,8 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 					Vertex{ v0, n0, uv0 },
 					Vertex{ v1, n1, uv1 },
 					Vertex{ v2, n2, uv2 },
-					materialIndex
+					materialIndex,
+					isEmissive ? scene.emissiveTriangles.size() : -1
 				);
 
 				if(isEmissive)

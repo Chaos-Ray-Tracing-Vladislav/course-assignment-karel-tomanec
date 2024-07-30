@@ -309,8 +309,10 @@ struct Triangle
 
 	Vector3 faceNormal;
 
-	Triangle(const Vertex& a, const Vertex& b, const Vertex& c, uint32_t materialIndex)
-		: v0(a), v1(b), v2(c), materialIndex(materialIndex)
+	int32_t emissiveIndex = -1;
+
+	Triangle(const Vertex& a, const Vertex& b, const Vertex& c, uint32_t materialIndex, int32_t emissiveIndex)
+		: v0(a), v1(b), v2(c), materialIndex(materialIndex), emissiveIndex(emissiveIndex)
 	{
 		this->faceNormal = Normalize(Cross(v1.position - v0.position, v2.position - v0.position));
 	}
