@@ -37,7 +37,7 @@
 			"albedo": [
 				1.0, 1.0, 1.0
 			],
-			"smooth_shading": true,
+			"smooth_shading": false,
 			"back_face_culling": true
 		},
 		{
@@ -46,7 +46,7 @@
 			"albedo": [
 				0.0, 1.0, 0.0
 			],
-			"smooth_shading": true,
+			"smooth_shading": false,
 			"back_face_culling": true
 		},
 		{
@@ -55,7 +55,7 @@
 			"albedo": [
 				1.0, 0.0, 0.0
 			],
-			"smooth_shading": true,
+			"smooth_shading": false,
 			"back_face_culling": true
 		},
 		{
@@ -81,7 +81,7 @@
 			"albedo": [
 				0.8, 0.8, 0.8
 			],
-			"smooth_shading": false
+			"smooth_shading": true
 		},
 		{
 			"type": "emissive",
