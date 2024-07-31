@@ -206,6 +206,7 @@ private:
 			}
 			else if (material.type == Material::Type::REFRACTIVE)
 			{
+				Vector3 albedo = material.getAlbedo(hitInfo.barycentrics, triangle.getUVs(hitInfo.barycentrics));
 				float eta = material.ior;
 				Vector3 wi = -ray.directionN;
 				float cosThetaI = Dot(normal, wi);
@@ -224,7 +225,7 @@ private:
 					// Total internal reflection case
 					Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
 					Ray reflectionRay{offsetOrigin, reflectionDir};
-					L += traceRay(reflectionRay, {}, rnd, depth + 1);
+					L += albedo * traceRay(reflectionRay, {}, rnd, depth + 1);
 				}
 				else
 				{
@@ -235,7 +236,7 @@ private:
 						                                                 ? hitInfo.normal
 						                                                 : -hitInfo.normal);
 					Ray refractionRay{offsetOriginRefraction, wt};
-					Vector3 refractionL = traceRay(refractionRay, {}, rnd, depth + 1);
+					Vector3 refractionL = albedo * traceRay(refractionRay, {}, rnd, depth + 1);
 
 					Vector3 reflectionDir = Normalize(ray.directionN - normal * 2.f * Dot(normal, ray.directionN));
 					Vector3 offsetOriginReflection = OffsetRayOrigin(hitInfo.point,
@@ -243,7 +244,7 @@ private:
 						                                                 ? -hitInfo.normal
 						                                                 : hitInfo.normal);
 					Ray reflectionRay{offsetOriginReflection, reflectionDir};
-					Vector3 reflectionL = traceRay(reflectionRay, {}, rnd, depth + 1);
+					Vector3 reflectionL = albedo * traceRay(reflectionRay, {}, rnd, depth + 1);
 
 					float fresnel = 0.5f * std::powf(1.f + Dot(ray.directionN, normal), 5);
 
@@ -263,8 +264,8 @@ private:
 
 	static constexpr uint32_t maxDepth = 5;
 	static constexpr uint32_t maxColorComponent = 255;
-	static constexpr uint32_t sampleCount = 16;
-	static constexpr uint32_t frameCount = 1;
+	static constexpr uint32_t sampleCount = 256;
+	static constexpr uint32_t frameCount = 144;
 
 	Scene& scene;
 };

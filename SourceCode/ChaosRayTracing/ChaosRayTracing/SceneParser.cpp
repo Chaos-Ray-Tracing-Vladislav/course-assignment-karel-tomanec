@@ -259,6 +259,13 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				const Value& iorVal = it->FindMember(kIorStr.c_str())->value;
 				assert(!iorVal.IsNull() && iorVal.IsFloat());
 				material.ior = iorVal.GetFloat();
+
+				const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
+				assert(!albedoVal.IsNull());
+				if (albedoVal.IsArray())
+				{
+					material.setAlbedo(loadVector(albedoVal.GetArray()));
+				}
 			}
 			else if (material.type == Material::Type::EMISSIVE)
 			{
