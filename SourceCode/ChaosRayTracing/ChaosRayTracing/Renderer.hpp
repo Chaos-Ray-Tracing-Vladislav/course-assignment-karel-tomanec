@@ -7,6 +7,7 @@
 #include <mutex>
 #include <barrier>
 #include <utility>
+#include "ThreadPool.hpp"
 
 class Image
 {
@@ -48,43 +49,41 @@ public:
 
         Image image(imageWidth, imageHeight);
 
-        auto renderTask = [&](uint32_t startRow, uint32_t endRow)
-            {
-                for (uint32_t rowIdx = startRow; rowIdx < endRow; ++rowIdx)
-                {
-                    float y = static_cast<float>(rowIdx) + 0.5f; // To pixel center
-                    y /= imageHeight; // To NDC
-                    y = 1.f - (2.f * y); // To screen space
-                    for (uint32_t colIdx = 0; colIdx < imageWidth; ++colIdx)
-                    {
-                        float x = static_cast<float>(colIdx) + 0.5f; // To pixel center
-                        x /= imageWidth; // To NDC
-                        x = 2.f * x - 1.f; // To screen space
-                        x *= static_cast<float>(imageWidth) / imageHeight; // Consider aspect ratio
 
-                        RGB color = GetPixel(x, y);
-
-                        image.SetPixel(colIdx, rowIdx, color);
-                    }
-                }
-            };
-
-        uint32_t numThreads = std::thread::hardware_concurrency();
-        std::vector<std::jthread> threads;
-        uint32_t rowsPerThread = imageHeight / numThreads;
-
-        for (uint32_t i = 0; i < numThreads; ++i)
+        ThreadPool threadPool;
+        std::vector<std::future<void>> results;
+        uint32_t bucketSize = sceneSettings.imageSettings.bucketSize;
+        for (uint32_t startRow = 0; startRow < imageHeight; startRow += bucketSize)
         {
-            uint32_t startRow = i * rowsPerThread;
-            uint32_t endRow = (i == numThreads - 1) ? imageHeight : startRow + rowsPerThread;
-            threads.emplace_back([&, startRow, endRow]()
-                {
-                    renderTask(startRow, endRow);
-                });
+            uint32_t endRow = startRow + bucketSize;
+            for (uint32_t startColumn = 0; startColumn < imageWidth; startColumn += bucketSize)
+            {
+                uint32_t endColumn = startColumn + bucketSize;
+                results.emplace_back(threadPool.Enqueue([&, startRow, endRow, startColumn, endColumn]
+                    {
+                        for (uint32_t rowIdx = startRow; rowIdx < endRow; ++rowIdx)
+                        {
+                            float y = static_cast<float>(rowIdx) + 0.5f; // To pixel center
+                            y /= imageHeight; // To NDC
+                            y = 1.f - (2.f * y); // To screen space
+                            for (uint32_t colIdx = startColumn; colIdx < endColumn; ++colIdx)
+                            {
+                                float x = static_cast<float>(colIdx) + 0.5f; // To pixel center
+                                x /= imageWidth; // To NDC
+                                x = 2.f * x - 1.f; // To screen space
+                                x *= static_cast<float>(imageWidth) / imageHeight; // Consider aspect ratio
+
+                                RGB color = GetPixel(x, y);
+
+                                image.SetPixel(colIdx, rowIdx, color);
+                            }
+                        }
+                    }));
+            }
         }
 
-        for (auto& thread : threads)
-            thread.join();
+        for (auto&& result : results)
+            result.get();
 
         WriteToFile(image, sceneSettings);
     }
