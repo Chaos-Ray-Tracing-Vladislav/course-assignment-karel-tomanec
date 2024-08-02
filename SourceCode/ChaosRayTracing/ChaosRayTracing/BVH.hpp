@@ -10,10 +10,13 @@
 struct BVHNode
 {
 	AABB boundingBox;
-	union {
+
+	union
+	{
 		uint32_t primitivesOffset; // leaf;
 		uint32_t secondChildOffset; // interior
 	};
+
 	uint16_t primitiveCount; // 0 -> interior node
 	uint8_t splitAxis;
 
@@ -26,7 +29,6 @@ struct BVHNode
 class BVH
 {
 public:
-
 	enum class SplitHeuristic
 	{
 		Equal,
@@ -38,52 +40,57 @@ public:
 
 	BVH(std::vector<Triangle>& triangles)
 	{
-		Range range{ 0, static_cast<uint32_t>(triangles.size()) };
+		Range range{0, static_cast<uint32_t>(triangles.size())};
 		build(triangles, range, 0);
 	}
 
-	HitInfo closestHit(const std::vector<Triangle>& triangles, Ray& ray) const
+	HitInfo closestHit(const std::vector<Triangle>& triangles, const std::vector<Material>& materials, Ray& ray) const
 	{
-		std::function closestHitFunc = [&triangles, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
+		std::function closestHitFunc = [&triangles, &ray, &materials](HitInfo& hitInfo, uint32_t trianglesStart,
+		                                                              uint32_t trianglesEnd)
+		{
+			for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
 			{
-				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
-				{
-					const auto& triangle = triangles[triangleIndex];
-					HitInfo currHitInfo = triangle.Intersect(ray);
+				const auto& triangle = triangles[triangleIndex];
+				const auto& material = materials[triangle.materialIndex];
 
-					if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
-					{
-						currHitInfo.triangleIndex = triangleIndex;
-						hitInfo = currHitInfo;
-						ray.maxT = hitInfo.t;
-					}
+				HitInfo currHitInfo = triangle.intersect(ray, material.cullBackFace());
+
+				if (currHitInfo.hit && currHitInfo.t < hitInfo.t)
+				{
+					currHitInfo.triangleIndex = triangleIndex;
+					hitInfo = currHitInfo;
+					ray.maxT = hitInfo.t;
 				}
-				return false;
-			};
+			}
+			return false;
+		};
 		return traverse(ray, closestHitFunc);
 	}
 
 	bool anyHit(const std::vector<Triangle>& triangles, const std::vector<Material>& materials, Ray& ray) const
 	{
-		std::function anyHitFunc = [&triangles, &materials, &ray](HitInfo& hitInfo, uint32_t trianglesStart, uint32_t trianglesEnd)
+		std::function anyHitFunc = [&triangles, &materials, &ray](HitInfo& hitInfo, uint32_t trianglesStart,
+		                                                          uint32_t trianglesEnd)
+		{
+			for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
 			{
-				for (uint32_t triangleIndex = trianglesStart; triangleIndex < trianglesEnd; ++triangleIndex)
-				{
-					const auto& triangle = triangles[triangleIndex];
-					HitInfo currHitInfo = triangle.Intersect(ray);
+				const auto& triangle = triangles[triangleIndex];
+				const auto& material = materials[triangle.materialIndex];
+				HitInfo currHitInfo = triangle.intersect(ray, material.cullBackFace());
 
-					if (currHitInfo.hit)
+				if (currHitInfo.hit)
+				{
+					const auto& material = materials[triangle.materialIndex];
+					if (material.type != Material::Type::REFRACTIVE)
 					{
-						const auto& material = materials[triangle.materialIndex];
-						if (material.type != Material::Type::REFRACTIVE)
-						{
-							hitInfo.hit = true;
-							return true;
-						}
+						hitInfo.hit = true;
+						return true;
 					}
 				}
-				return false;
-			};
+			}
+			return false;
+		};
 		HitInfo hitInfo = traverse(ray, anyHitFunc);
 		return hitInfo.hit;
 	}
@@ -94,7 +101,7 @@ public:
 		if (nodes.empty())
 			return hitInfo;
 
-		const bool dirIsNegative[3] = { ray.directionN.x < 0.f, ray.directionN.y < 0.f, ray.directionN.z < 0.f };
+		const bool dirIsNegative[3] = {ray.directionN.x < 0.f, ray.directionN.y < 0.f, ray.directionN.z < 0.f};
 
 		// Fixed-size stack to avoid dynamic memory allocation
 		constexpr size_t maxStackDepth = 32;
@@ -134,10 +141,9 @@ public:
 	}
 
 private:
-
 	void build(std::vector<Triangle>& triangles, Range range, uint32_t depth)
 	{
-		AABB boundingBox{ triangles, range };
+		AABB boundingBox{triangles, range};
 		if (depth >= maxDepth || range.count() <= maxTriangleCountPerLeaf)
 		{
 			// Create leaf node
@@ -152,40 +158,46 @@ private:
 		{
 			uint32_t mid = (range.start + range.end) / 2;
 			Vector3 extent = boundingBox.extent();
-			uint8_t splitAxis = static_cast<uint8_t>(std::distance(std::begin(extent.data), std::ranges::max_element(extent.data)));
+			uint8_t splitAxis = static_cast<uint8_t>(std::distance(std::begin(extent.data),
+			                                                       std::ranges::max_element(extent.data)));
 
 			switch (splitHeuristic)
 			{
-				case SplitHeuristic::Middle:
+			case SplitHeuristic::Middle:
 				{
 					float midVal = (boundingBox.minPoint[splitAxis] + boundingBox.maxPoint[splitAxis]) * 0.5f;
-					auto midIt = std::partition(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis, midVal](const Triangle& tri)
-						{
-							return tri.Centroid()[splitAxis] < midVal;
-						});
-					mid = std::distance(triangles.begin(), midIt);
+					auto midIt = std::partition(triangles.begin() + range.start, triangles.begin() + range.end,
+					                            [splitAxis, midVal](const Triangle& tri)
+					                            {
+						                            return tri.centroid()[splitAxis] < midVal;
+					                            });
+					mid = static_cast<uint32_t>(std::distance(triangles.begin(), midIt));
 					if (midIt != triangles.begin() + range.start && midIt != triangles.begin() + range.end)
 						break;
 				}
-				case SplitHeuristic::Equal:
+			case SplitHeuristic::Equal:
 				{
 					mid = (range.start + range.end) / 2;
-					std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
-						{
-							return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
-						});
+					std::nth_element(triangles.begin() + range.start, triangles.begin() + mid,
+					                 triangles.begin() + range.end,
+					                 [splitAxis](const Triangle& triA, const Triangle& triB)
+					                 {
+						                 return triA.centroid()[splitAxis] < triB.centroid()[splitAxis];
+					                 });
 				}
 				break;
-				case SplitHeuristic::SAH:
-				default:
+			case SplitHeuristic::SAH:
+			default:
 				{
 					if (range.count() == 2)
 					{
 						mid = (range.start + range.end) / 2;
-						std::nth_element(triangles.begin() + range.start, triangles.begin() + mid, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
-							{
-								return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
-							});
+						std::nth_element(triangles.begin() + range.start, triangles.begin() + mid,
+						                 triangles.begin() + range.end,
+						                 [splitAxis](const Triangle& triA, const Triangle& triB)
+						                 {
+							                 return triA.centroid()[splitAxis] < triB.centroid()[splitAxis];
+						                 });
 					}
 					else
 					{
@@ -193,15 +205,17 @@ private:
 						float boundingBoxArea = boundingBox.area();
 						for (uint8_t axis = 0; axis < 3; axis++)
 						{
-							std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [axis](const Triangle& triA, const Triangle& triB)
-								{
-									return triA.Centroid()[axis] < triB.Centroid()[axis];
-								});
+							std::sort(triangles.begin() + range.start, triangles.begin() + range.end,
+							          [axis](const Triangle& triA, const Triangle& triB)
+							          {
+								          return triA.centroid()[axis] < triB.centroid()[axis];
+							          });
 							for (uint32_t index = range.start + 1; index < range.end; index++)
 							{
 								AABB left = AABB(triangles, Range(range.start, index));
-								AABB right = AABB(triangles, Range{ index, range.end });
-								float cost = ((index - range.start) * left.area() + (range.end - index) * right.area()) / boundingBoxArea;
+								AABB right = AABB(triangles, Range{index, range.end});
+								float cost = ((index - range.start) * left.area() + (range.end - index) * right.area())
+									/ boundingBoxArea;
 								if (cost < minCost)
 								{
 									minCost = cost;
@@ -211,10 +225,11 @@ private:
 							}
 						}
 
-						std::sort(triangles.begin() + range.start, triangles.begin() + range.end, [splitAxis](const Triangle& triA, const Triangle& triB)
-							{
-								return triA.Centroid()[splitAxis] < triB.Centroid()[splitAxis];
-							});
+						std::sort(triangles.begin() + range.start, triangles.begin() + range.end,
+						          [splitAxis](const Triangle& triA, const Triangle& triB)
+						          {
+							          return triA.centroid()[splitAxis] < triB.centroid()[splitAxis];
+						          });
 					}
 				}
 				break;
@@ -229,16 +244,16 @@ private:
 			uint32_t interiorNodeIndex = static_cast<uint32_t>(nodes.size());
 			nodes.emplace_back(interiorNode);
 
-			build(triangles, Range{ range.start, mid }, depth + 1);
+			build(triangles, Range{range.start, mid}, depth + 1);
 
 			nodes[interiorNodeIndex].secondChildOffset = static_cast<uint32_t>(nodes.size());
 
-			build(triangles, Range{ mid, range.end }, depth + 1);
+			build(triangles, Range{mid, range.end}, depth + 1);
 		}
 	}
 
 	std::vector<BVHNode> nodes;
 	static constexpr uint32_t maxDepth = 10;
 	static constexpr uint32_t maxTriangleCountPerLeaf = 4;
-	static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::SAH;
+	static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::Middle;
 };

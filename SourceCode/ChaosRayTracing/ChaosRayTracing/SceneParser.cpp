@@ -21,53 +21,55 @@ inline Vector3 loadVector(const rapidjson::Value::ConstArray& arr)
 	};
 }
 
-inline Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr) 
+inline Matrix4 loadMatrix(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() == 9);
-	Matrix4 result = Matrix4::Identity();
-	for(uint32_t i = 0; i < 3; i++)
+	Matrix4 result = Matrix4::identity();
+	for (uint32_t i = 0; i < 3; i++)
 	{
-		for(uint32_t j = 0; j < 3; j++) 
+		for (uint32_t j = 0; j < 3; j++)
 			result(i, j) = static_cast<float>(arr[i + 3 * j].GetDouble());
 	}
 	return result;
 }
 
-inline std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<Vector3> loadVertices(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<Vector3> result;
 	result.reserve(arr.Size() / 3);
-	for(uint32_t i = 0; i < arr.Size(); i += 3) {
+	for (uint32_t i = 0; i < arr.Size(); i += 3)
+	{
 		result.emplace_back(
-			static_cast<float>(arr[i].GetDouble()), 
-				static_cast<float>(arr[i+1].GetDouble()), 
-				static_cast<float>(arr[i+2].GetDouble())
+			static_cast<float>(arr[i].GetDouble()),
+			static_cast<float>(arr[i + 1].GetDouble()),
+			static_cast<float>(arr[i + 2].GetDouble())
 		);
 	}
 	return result;
 }
 
-inline std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<Vector2> loadUVs(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<Vector2> result;
 	result.reserve(arr.Size() / 3);
-	for(uint32_t i = 0; i < arr.Size(); i += 3) {
+	for (uint32_t i = 0; i < arr.Size(); i += 3)
+	{
 		result.emplace_back(
-			static_cast<float>(arr[i].GetDouble()), 
-				static_cast<float>(arr[i+1].GetDouble())
+			static_cast<float>(arr[i].GetDouble()),
+			static_cast<float>(arr[i + 1].GetDouble())
 		);
 	}
 	return result;
 }
 
-inline std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr) 
+inline std::vector<uint32_t> loadIndices(const rapidjson::Value::ConstArray& arr)
 {
 	assert(arr.Size() % 3 == 0);
 	std::vector<uint32_t> result;
 	result.reserve(arr.Size() / 3);
-	for(uint32_t i = 0; i < arr.Size(); ++i)
+	for (uint32_t i = 0; i < arr.Size(); ++i)
 		result.emplace_back(arr[i].GetInt());
 	return result;
 }
@@ -91,7 +93,7 @@ rapidjson::Document SceneParser::getJsonDocument(const std::string& fileName)
 	}
 	assert(doc.IsObject());
 
-	return doc;	// RVO
+	return doc; // RVO
 }
 
 void SceneParser::parseSceneFile(const std::string& fileName) const
@@ -112,7 +114,8 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 		{
 			const Value& imageWidthVal = imageSettingsVal.FindMember(kImageWidthStr.c_str())->value;
 			const Value& imageHeightVal = imageSettingsVal.FindMember(kImageHeightStr.c_str())->value;
-			assert(!imageWidthVal.IsNull() && imageWidthVal.IsInt() && !imageHeightVal.IsNull() && imageHeightVal.IsInt());
+			assert(
+				!imageWidthVal.IsNull() && imageWidthVal.IsInt() && !imageHeightVal.IsNull() && imageHeightVal.IsInt());
 			scene.settings.imageSettings.width = imageWidthVal.GetInt();
 			scene.settings.imageSettings.height = imageHeightVal.GetInt();
 
@@ -134,9 +137,9 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 
 		const Value& positionVal = cameraVal.FindMember(kPositionStr.c_str())->value;
 		assert(!positionVal.IsNull() && positionVal.IsArray());
-		Matrix4 translation = MakeTranslation(loadVector(positionVal.GetArray()));
+		Matrix4 translation = makeTranslation(loadVector(positionVal.GetArray()));
 
-		scene.camera.transform =  translation * rotation;
+		scene.camera.transform = translation * rotation;
 	}
 
 	const Value& lightsValue = doc.FindMember(kLightsStr.c_str())->value;
@@ -148,86 +151,14 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 			const Value& intensityValue = it->FindMember(kIntensityStr.c_str())->value;
 			assert(!intensityValue.IsNull() && intensityValue.IsInt());
 			light.intensity = static_cast<float>(intensityValue.GetInt()) * 0.1f; // lights seems to be too bright
+			if (light.intensity == 0.f)
+				continue;
 
 			const Value& positionVal = it->FindMember(kPositionStr.c_str())->value;
 			assert(!positionVal.IsNull() && positionVal.IsArray());
 			light.position = loadVector(positionVal.GetArray());
 
 			scene.lights.push_back(light);
-		}
-	}
-
-	const Value& objectsValue = doc.FindMember(kObjectsStr.c_str())->value;
-	if(!objectsValue.IsNull() && objectsValue.IsArray()) 
-	{
-		for(Value::ConstValueIterator it = objectsValue.Begin(); it != objectsValue.End(); ++it)
-		{
-			const Value& verticesValue = it->FindMember(kVerticesStr.c_str())->value;
-			assert(!verticesValue.IsNull() && verticesValue.IsArray());
-			std::vector<Vector3> vertices = loadVertices(verticesValue.GetArray());
-
-			std::vector<Vector2> uvs;
-			if (it->HasMember(kUVsStr.c_str()))
-			{
-				const Value& uvsValue = it->FindMember(kUVsStr.c_str())->value;
-				assert(!uvsValue.IsNull() && uvsValue.IsArray());
-				uvs = loadUVs(uvsValue.GetArray());
-			}
-
-			const Value& trianglesValue = it->FindMember(kTrianglesStr.c_str())->value;
-			assert(!trianglesValue.IsNull() && trianglesValue.IsArray());
-			std::vector<uint32_t> indices = loadIndices(trianglesValue.GetArray());
-
-			// Compute vertex normals
-			std::vector<Vector3> vertexNormals(vertices.size(), { 0.0f, 0.0f, 0.0f });
-			for (uint32_t i = 0; i < indices.size(); i += 3)
-			{
-				const auto& i0 = indices[i];
-				const auto& i1 = indices[i + 1];
-				const auto& i2 = indices[i + 2];
-				const auto& v0 = vertices[i0];
-				const auto& v1 = vertices[i1];
-				const auto& v2 = vertices[i2];
-				Vector3 faceNormal = Normalize(Cross(v1 - v0, v2 - v0));
-
-				vertexNormals[i0] += faceNormal;
-				vertexNormals[i1] += faceNormal;
-				vertexNormals[i2] += faceNormal;
-			}
-			// Normalize
-			for (auto& vertexNormal : vertexNormals)
-				vertexNormal = Normalize(vertexNormal);
-
-			// Get material index
-			const Value& materialIndexValue = it->FindMember(kMaterialIndexStr.c_str())->value;
-			assert(!materialIndexValue.IsNull() && materialIndexValue.IsInt());
-
-			scene.triangles.reserve(scene.triangles.size() + indices.size() / 3);
-			for (uint32_t i = 0; i < indices.size(); i += 3)
-			{
-				const auto& i0 = indices[i];
-				const auto& i1 = indices[i + 1];
-				const auto& i2 = indices[i + 2];
-
-				const auto& v0 = vertices[i0];
-				const auto& v1 = vertices[i1];
-				const auto& v2 = vertices[i2];
-
-				const auto& n0 = vertexNormals[i0];
-				const auto& n1 = vertexNormals[i1];
-				const auto& n2 = vertexNormals[i2];
-
-				const auto& uv0 = !uvs.empty() ? uvs[i0] : 1.f;
-				const auto& uv1 = !uvs.empty() ? uvs[i1] : 1.f;
-				const auto& uv2 = !uvs.empty() ? uvs[i2] : 1.f;
-
-				scene.triangles.emplace_back(
-					Vertex{ v0, n0, uv0 },
-					Vertex{ v1, n1, uv1 },
-					Vertex{ v2, n2, uv2 },
-					materialIndexValue.GetInt()
-				);
-			}
 		}
 	}
 
@@ -240,7 +171,7 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 			const Value& nameValue = it->FindMember(kTexturesNameStr.c_str())->value;
 			assert(!nameValue.IsNull() && nameValue.IsString());
 			std::string name = std::string(nameValue.GetString());
-			
+
 			const Value& typeValue = it->FindMember(kTexturesTypeStr.c_str())->value;
 			assert(!typeValue.IsNull() && typeValue.IsString());
 			std::string type = std::string(typeValue.GetString());
@@ -266,7 +197,8 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				assert(!edgeWidthValue.IsNull() && edgeWidthValue.IsFloat());
 				float edgeWidth = edgeWidthValue.GetFloat();
 
-				scene.textures.emplace(name, std::make_shared<const EdgesTexture>(name, edgeColor, innerColor, edgeWidth));
+				scene.textures.emplace(
+					name, std::make_shared<const EdgesTexture>(name, edgeColor, innerColor, edgeWidth));
 			}
 			else if (type == "checker")
 			{
@@ -303,10 +235,11 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 	}
 
 	const std::map<std::string, Material::Type> materialTypeMap = {
-		{ kTypeConstantStr, Material::Type::CONSTANT},
-		{ kTypeDiffuseStr, Material::Type::DIFFUSE},
-		{ kTypeReflectiveStr, Material::Type::REFLECTIVE},
-		{ kTypeRefractiveStr, Material::Type::REFRACTIVE},
+		{kTypeConstantStr, Material::Type::CONSTANT},
+		{kTypeDiffuseStr, Material::Type::DIFFUSE},
+		{kTypeReflectiveStr, Material::Type::REFLECTIVE},
+		{kTypeRefractiveStr, Material::Type::REFRACTIVE},
+		{kTypeEmissiveStr, Material::Type::EMISSIVE},
 	};
 
 	// Load materials
@@ -327,12 +260,26 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 				assert(!iorVal.IsNull() && iorVal.IsFloat());
 				material.ior = iorVal.GetFloat();
 
-			} else {
 				const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
 				assert(!albedoVal.IsNull());
 				if (albedoVal.IsArray())
 				{
-					material.SetAlbedo(loadVector(albedoVal.GetArray()));
+					material.setAlbedo(loadVector(albedoVal.GetArray()));
+				}
+			}
+			else if (material.type == Material::Type::EMISSIVE)
+			{
+				const Value& emissionVal = it->FindMember(kEmissionStr.c_str())->value;
+				assert(!emissionVal.IsNull() && emissionVal.IsArray());
+				material.emission = loadVector(emissionVal.GetArray());
+			}
+			else
+			{
+				const Value& albedoVal = it->FindMember(kAlbedoStr.c_str())->value;
+				assert(!albedoVal.IsNull());
+				if (albedoVal.IsArray())
+				{
+					material.setAlbedo(loadVector(albedoVal.GetArray()));
 				}
 				else if (albedoVal.IsString())
 				{
@@ -353,6 +300,89 @@ void SceneParser::parseSceneFile(const std::string& fileName) const
 			material.smoothShading = smoothShadingVal.GetBool();
 
 			scene.materials.push_back(material);
+		}
+	}
+
+	const Value& objectsValue = doc.FindMember(kObjectsStr.c_str())->value;
+	if (!objectsValue.IsNull() && objectsValue.IsArray())
+	{
+		for (Value::ConstValueIterator it = objectsValue.Begin(); it != objectsValue.End(); ++it)
+		{
+			const Value& verticesValue = it->FindMember(kVerticesStr.c_str())->value;
+			assert(!verticesValue.IsNull() && verticesValue.IsArray());
+			std::vector<Vector3> vertices = loadVertices(verticesValue.GetArray());
+
+			std::vector<Vector2> uvs;
+			if (it->HasMember(kUVsStr.c_str()))
+			{
+				const Value& uvsValue = it->FindMember(kUVsStr.c_str())->value;
+				assert(!uvsValue.IsNull() && uvsValue.IsArray());
+				uvs = loadUVs(uvsValue.GetArray());
+			}
+
+			const Value& trianglesValue = it->FindMember(kTrianglesStr.c_str())->value;
+			assert(!trianglesValue.IsNull() && trianglesValue.IsArray());
+			std::vector<uint32_t> indices = loadIndices(trianglesValue.GetArray());
+
+			// Compute vertex normals
+			std::vector<Vector3> vertexNormals(vertices.size(), {0.0f, 0.0f, 0.0f});
+			for (uint32_t i = 0; i < indices.size(); i += 3)
+			{
+				const auto& i0 = indices[i];
+				const auto& i1 = indices[i + 1];
+				const auto& i2 = indices[i + 2];
+				const auto& v0 = vertices[i0];
+				const auto& v1 = vertices[i1];
+				const auto& v2 = vertices[i2];
+				Vector3 faceNormal = Normalize(Cross(v1 - v0, v2 - v0));
+
+				vertexNormals[i0] += faceNormal;
+				vertexNormals[i1] += faceNormal;
+				vertexNormals[i2] += faceNormal;
+			}
+			// Normalize
+			for (auto& vertexNormal : vertexNormals)
+				vertexNormal = Normalize(vertexNormal);
+
+			// Get material index
+			const Value& materialIndexValue = it->FindMember(kMaterialIndexStr.c_str())->value;
+			assert(!materialIndexValue.IsNull() && materialIndexValue.IsInt());
+			uint32_t materialIndex = materialIndexValue.GetInt();
+			const auto& material = scene.materials[materialIndex];
+			bool isEmissive = material.type == Material::Type::EMISSIVE;
+
+			scene.triangles.reserve(scene.triangles.size() + indices.size() / 3);
+			for (uint32_t i = 0; i < indices.size(); i += 3)
+			{
+				const auto& i0 = indices[i];
+				const auto& i1 = indices[i + 1];
+				const auto& i2 = indices[i + 2];
+
+				const auto& v0 = vertices[i0];
+				const auto& v1 = vertices[i1];
+				const auto& v2 = vertices[i2];
+
+				const auto& n0 = vertexNormals[i0];
+				const auto& n1 = vertexNormals[i1];
+				const auto& n2 = vertexNormals[i2];
+
+				const auto& uv0 = !uvs.empty() ? uvs[i0] : 1.f;
+				const auto& uv1 = !uvs.empty() ? uvs[i1] : 1.f;
+				const auto& uv2 = !uvs.empty() ? uvs[i2] : 1.f;
+
+				scene.triangles.emplace_back(
+					Vertex{v0, n0, uv0},
+					Vertex{v1, n1, uv1},
+					Vertex{v2, n2, uv2},
+					materialIndex,
+					isEmissive ? scene.emissiveSampler.emissiveTriangles.size() : -1
+				);
+
+				if (isEmissive)
+				{
+					scene.emissiveSampler.emissiveTriangles.emplace_back(scene.triangles.back(), material.emission);
+				}
+			}
 		}
 	}
 }

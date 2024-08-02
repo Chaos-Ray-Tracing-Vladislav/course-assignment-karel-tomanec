@@ -7,14 +7,14 @@ class Camera
 public:
 	Camera() = default;
 
-	Matrix4 transform = Matrix4::Identity();
+	Matrix4 transform = Matrix4::identity();
 
-	Point3 GetPosition() const
+	Point3 getPosition() const
 	{
-		return transform.GetTranslation();
+		return transform.getTranslation();
 	}
 
-	Vector3 GetLookDirection() const
+	Vector3 getLookDirection() const
 	{
 		return Normalize(transform * Vector3(0.f, 0.f, -1.f));
 	}

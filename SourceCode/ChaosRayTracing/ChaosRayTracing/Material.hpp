@@ -14,22 +14,30 @@ public:
 		CONSTANT,
 		DIFFUSE,
 		REFLECTIVE,
-		REFRACTIVE
+		REFRACTIVE,
+		EMISSIVE
 	};
 
 	Type type;
 	float ior;
-	bool smoothShading;
+	bool smoothShading = false;
 	std::shared_ptr<const Texture> texture;
+	Vector3 emission{0.f};
 
-	void SetAlbedo(Vector3 albedo)
+	void setAlbedo(Vector3 albedo)
 	{
 		this->albedo = albedo;
 	}
 
-	Vector3 GetAlbedo(const Vector2& barycentrics, const Vector2& uv) const;
+	Vector3 getAlbedo(const Vector2& barycentrics, const Vector2& uv) const;
+
+	bool cullBackFace() const
+	{
+		if (type == REFRACTIVE)
+			return false;
+		return true;
+	}
 
 private:
-
-	Vector3 albedo{ 1.f };
+	Vector3 albedo{1.f};
 };

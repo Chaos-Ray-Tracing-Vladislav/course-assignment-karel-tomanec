@@ -5,8 +5,7 @@
 		],		
 		"image_settings": {
 			"width": 1920,
-			"height": 1080,
-			"bucket_size": 24
+			"height": 1080
 		}
 	},
 	
@@ -49,9 +48,16 @@
 	],
 	
 	"materials": [{
-		"type": "diffuse",
+			"type": "reflective",
 			"albedo": [
-				1, 0, 0
+				0.8, 0.8, 0.8
+			],
+			"smooth_shading": true
+		},
+		{
+			"type": "diffuse",
+			"albedo": [
+				0.9, 0.6, 0.9
 			],
 			"smooth_shading": false
 		}			
@@ -73,7 +79,7 @@
 			]
 		},
 		{	
-			"material_index": 0,	
+			"material_index": 1,	
 			"vertices": [
 				7.695038, 0.07024442, -0.1745732,
 				7.721254, 0.2733468, -0.2023404,
