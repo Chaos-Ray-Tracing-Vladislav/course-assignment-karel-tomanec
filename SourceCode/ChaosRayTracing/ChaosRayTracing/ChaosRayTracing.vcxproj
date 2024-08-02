@@ -136,13 +136,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ChaosRayTracing.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="SceneParser.cpp" />
+    <ClCompile Include="Textures.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AABB.hpp" />
+    <ClInclude Include="BVH.hpp" />
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="Light.hpp" />
+    <ClInclude Include="Material.hpp" />
     <ClInclude Include="Math3D.hpp" />
     <ClInclude Include="PPMWriter.hpp" />
     <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="Scene.hpp" />
+    <ClInclude Include="SceneParser.hpp" />
     <ClInclude Include="Textures.hpp" />
     <ClInclude Include="ThreadPool.hpp" />
   </ItemGroup>

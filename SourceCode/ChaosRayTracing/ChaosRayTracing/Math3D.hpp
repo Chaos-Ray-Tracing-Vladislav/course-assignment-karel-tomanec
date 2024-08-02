@@ -5,6 +5,8 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <iso646.h>
+#include <stdexcept>
 
 constexpr float DegToRad(float degrees)
 {
@@ -24,7 +26,9 @@ struct RGB
 
 	std::string ToString() const
 	{
-		return std::to_string(r) + " " + std::to_string(g) + " " + std::to_string(b);
+		char buffer[12];
+		std::snprintf(buffer, sizeof(buffer), "%u %u %u", r, g, b);
+		return { buffer };
 	}
 };
 
@@ -68,15 +72,36 @@ inline Vector2 operator /(const Vector2& v, float s)
 
 struct Vector3
 {
-	float x;
-	float y;
-	float z;
+	union
+	{
+		struct
+		{
+			float x;
+			float y;
+			float z;
+		};
+		float data[3];
+	};
 
 	Vector3() = default;
 
 	Vector3(float v) : x(v), y(v), z(v) {}
 
 	Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+
+	float& operator[](size_t index)
+	{
+		if (index < 3)
+			return data[index];
+		throw std::out_of_range("Index out of range");
+	}
+
+	const float& operator[](size_t index) const
+	{
+		if (index < 3)
+			return data[index];
+		throw std::out_of_range("Index out of range");
+	}
 
 	Vector3 operator -() const
 	{
@@ -190,6 +215,16 @@ inline float Dot(const Vector3& a, const Vector3& b)
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+inline Vector3 min(const Vector3& a, const Vector3& b)
+{
+	return Vector3(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z));
+}
+
+inline Vector3 max(const Vector3& a, const Vector3& b)
+{
+	return Vector3(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z));
+}
+
 struct Point3 : Vector3
 {
 	Point3() = default;
@@ -220,7 +255,7 @@ inline Vector3 operator -(const Point3& a, const Point3& b)
 	return Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-Vector3 OffsetRayOrigin(const Vector3& origin, const Vector3& normal)
+inline Vector3 OffsetRayOrigin(const Vector3& origin, const Vector3& normal)
 {
 	constexpr float rayOffset = 0.001f;
 	return origin + normal * rayOffset;
@@ -230,7 +265,14 @@ struct Ray
 {
 	Vector3 origin;
 	Vector3 directionN;
-	float maxT = std::numeric_limits<float>::max();
+	Vector3 directionNInv;
+	float maxT;
+
+	Ray(const Vector3& origin, const Vector3& directionN, float maxT = std::numeric_limits<float>::max())
+		: origin(origin), directionN(directionN), maxT(maxT)
+	{
+		directionNInv = Vector3(1.f / directionN.x, 1.f / directionN.y, 1.f / directionN.z);
+	}
 
 	Vector3 operator()(float t) const
 	{
@@ -245,7 +287,7 @@ struct HitInfo
 	Vector3 point;
 	Vector3 normal;
 	Vector2 barycentrics;
-	uint32_t meshIndex;
+	uint32_t materialIndex;
 	uint32_t triangleIndex;
 };
 
@@ -262,14 +304,19 @@ struct Triangle
 	Vertex v1;
 	Vertex v2;
 
+	uint32_t materialIndex;
+
 	Vector3 faceNormal;
 
-	Triangle(Vertex a, Vertex b, Vertex c)
+	Triangle(const Vertex& a, const Vertex& b, const Vertex& c, uint32_t materialIndex)
+		: v0(a), v1(b), v2(c), materialIndex(materialIndex)
 	{
-		v0 = a;
-		v1 = b;
-		v2 = c;
 		this->faceNormal = Normalize(Cross(v1.position - v0.position, v2.position - v0.position));
+	}
+
+	Vector3 Centroid() const
+	{
+		return (v0.position + v1.position + v2.position) / 3.f;
 	}
 
 	float Area() const
@@ -314,22 +361,25 @@ struct Triangle
 		Vector3 C1 = p - b;
 		Vector3 C2 = p - c;
 
-		if (Dot(faceNormal, Cross(edge0, C0)) < 0.f)
-			return info;
-		if (Dot(faceNormal, Cross(edge1, C1)) < 0.f)
-			return info;
-		if (Dot(faceNormal, Cross(edge2, C2)) < 0.f)
+		Vector3 cross0 = Cross(edge0, C0);
+		Vector3 cross1 = Cross(edge1, C1);
+		Vector3 cross2 = Cross(edge2, C2);
+
+		if (Dot(faceNormal, cross0) < 0.f ||
+			Dot(faceNormal, cross1) < 0.f ||
+			Dot(faceNormal, cross2) < 0.f)
 			return info;
 
 		// Calculate the barycentric coordinates
-		float triArea = Magnitude(Cross(b - a, c - a)); // Area of the whole triangle
-		info.barycentrics.x = Magnitude(Cross(p - a, c - a)) / triArea;
-		info.barycentrics.y = Magnitude(Cross(b - a, p - a)) / triArea;
+		float triArea = Magnitude(Cross(edge0, c - a)); // Area of the whole triangle
+		info.barycentrics.x = Magnitude(cross1) / triArea;
+		info.barycentrics.y = Magnitude(cross2) / triArea;
 
 		info.hit = true;
 		info.t = t;
 		info.point = p;
 		info.normal = faceNormal;
+		info.materialIndex = materialIndex;
 
 		return info;
 	}
@@ -425,21 +475,21 @@ static Matrix4 MakeRotationZ(float t)
 		0.f, 0.f, 0.f, 1.f);
 }
 
-Vector3 operator *(const Matrix4& H, const Vector3& v)
+inline Vector3 operator *(const Matrix4& H, const Vector3& v)
 {
 	return Vector3(H(0,0) * v.x + H(0,1) * v.y + H(0,2) * v.z,
 		H(1,0) * v.x + H(1,1) * v.y + H(1,2) * v.z,
 		H(2,0) * v.x + H(2,1) * v.y + H(2,2) * v.z);
 }
 
-Point3 operator *(const Matrix4& H, const Point3& p)
+inline Point3 operator *(const Matrix4& H, const Point3& p)
 {
 	return Point3(H(0,0) * p.x + H(0,1) * p.y + H(0,2) * p.z + H(0,3),
 		H(1,0) * p.x + H(1,1) * p.y + H(1,2) * p.z + H(1,3),
 		H(2,0) * p.x + H(2,1) * p.y + H(2,2) * p.z + H(2,3));
 }
 
-Matrix4 operator*(const Matrix4& A, const Matrix4& B)
+inline Matrix4 operator*(const Matrix4& A, const Matrix4& B)
 {
 	Matrix4 result;
 	for (int i = 0; i < 4; ++i)
@@ -455,3 +505,10 @@ Matrix4 operator*(const Matrix4& A, const Matrix4& B)
 	}
 	return result;
 }
+
+struct Range {
+	uint32_t start;
+	uint32_t end;
+
+	uint32_t count() const { return end - start; }
+};
